@@ -7,7 +7,8 @@ A tool to help with uploading and upgrading Mycroft skills on the
 
 ## Features
 
-Currently, Mycroft Skills Kit only can **upgrade** existing skills.
+ - Upgrade an existing skill
+ - Upload a new skill
 
 ## Install
 
@@ -19,4 +20,5 @@ pip3 install msk
 
 ```bash
 msk upgrade /opt/mycroft/skills/myskill
+msk upload /opt/mycroft/skills/mynewskill
 ```

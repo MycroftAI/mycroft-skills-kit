@@ -15,3 +15,7 @@ class NotUploaded(MshException):
 
 class PRModified(MshException):
     pass
+
+
+class MissingReadme(MshException):
+    pass
