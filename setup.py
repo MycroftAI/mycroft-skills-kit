@@ -4,7 +4,7 @@ setup(
     name='msk',
     version='0.1.2',  # Also update in msu/__init__.py
     packages=['msk'],
-    install_requires=['GitPython', 'typing', 'msm', 'pygithub', 'future'],
+    install_requires=['GitPython', 'typing', 'msm>=0.5.13', 'pygithub'],
     url='https://github.com/MycroftAI/mycroft-skills-kit',
     license='MIT',
     author='Mycroft AI',

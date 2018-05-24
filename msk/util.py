@@ -53,7 +53,7 @@ def ask_for_github_credentials() -> Github:
 
 
 def skill_repo_name(url: str):
-    return '{}/{}'.format(SkillEntry._extract_author(url), SkillEntry.extract_repo_name(url))
+    return '{}/{}'.format(SkillEntry.extract_author(url), SkillEntry.extract_repo_name(url))
 
 
 def ask_input(message, validator, fail_message='Invalid entry'):
