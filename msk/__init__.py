@@ -1,1 +1,1 @@
-__version__ = '0.1.0'  # Also update in setup.py
+__version__ = '0.1.3'  # Also update in setup.py
