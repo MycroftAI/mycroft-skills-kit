@@ -1,16 +1,16 @@
 import atexit
 
+import os
+from contextlib import contextmanager
 from getpass import getpass
 from github import Github, GithubException
-from github.NamedUser import NamedUser
 from github.Repository import Repository
 from msm import SkillEntry
 from os import chmod
-
-import os
-from msk import __version__
 from tempfile import mkstemp
+from typing import Optional
 
+from msk import __version__
 from msk.exceptions import PRModified
 
 ASKPASS = '''#!/usr/bin/env python3
@@ -56,9 +56,9 @@ def skill_repo_name(url: str):
     return '{}/{}'.format(SkillEntry.extract_author(url), SkillEntry.extract_repo_name(url))
 
 
-def ask_input(message, validator, fail_message='Invalid entry'):
+def ask_input(message, validator=lambda x: True, fail_message='Invalid entry'):
     while True:
-        resp = input(message)
+        resp = input(message + ' ')
         try:
             if validator(resp):
                 return resp
@@ -67,8 +67,21 @@ def ask_input(message, validator, fail_message='Invalid entry'):
         print(fail_message)
 
 
+def ask_input_lines(message: str, bullet: str = '>') -> list:
+    print(message)
+    lines = []
+    while len(lines) < 1 or lines[-1]:
+        lines.append(ask_input(bullet))
+    return lines[:-1]
+
+
+def ask_yes_no(message: str, default: Optional[bool]) -> bool:
+    resp = ask_input(message, lambda x: (not x and default is not None) or x in 'yYnN')
+    return {'n': False, 'y': True, '': default}[resp.lower()]
+
+
 def create_or_edit_pr(title: str, body: str, skills_repo: Repository,
-                      user: NamedUser, branch: str):
+                      user, branch: str):
     base = skills_repo.default_branch
     head = '{}:{}'.format(user.login, branch)
     pulls = list(skills_repo.get_pulls(base=base, head=head))
@@ -81,3 +94,23 @@ def create_or_edit_pr(title: str, body: str, skills_repo: Repository,
         return pull
     else:
         return skills_repo.create_pull(title, body, base=base, head=head)
+
+
+def to_camel(snake):
+    """time_skill -> TimeSkill"""
+    return snake.title().replace('_', '')
+
+
+def to_snake(camel):
+    """TimeSkill -> time_skill"""
+    if not camel:
+        return camel
+    return ''.join('_' + x if 'A' <= x <= 'Z' else x for x in camel).lower()[camel[0].isupper():]
+
+
+@contextmanager
+def print_error(exception):
+    try:
+        yield
+    except exception as e:
+        print('{}: {}'.format(exception.__name__, e))

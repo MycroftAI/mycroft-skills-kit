@@ -2,13 +2,15 @@ import sys
 
 from argparse import ArgumentParser
 
+from msk.actions.create import CreateAction
 from msk.actions.upgrade import UpgradeAction
 from msk.actions.upload import UploadAction
-from msk.exceptions import MshException
+from msk.exceptions import MskException
 
 console_actions = {
     'upgrade': UpgradeAction,
-    'upload': UploadAction
+    'upload': UploadAction,
+    'create': CreateAction
 }
 
 
@@ -22,9 +24,9 @@ def main():
 
     try:
         return console_actions[args.action](args).perform()
-    except MshException as e:
+    except MskException as e:
         print('{}: {}'.format(e.__class__.__name__, str(e)))
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         pass
 
 

@@ -1,15 +1,18 @@
 import os
+import shutil
 from argparse import ArgumentParser
 from git import Git
-from msm import SkillEntry, SkillRepo
-from os.path import isdir, join, isfile
-from subprocess import call
+from msm import SkillEntry
+from os import listdir
+from os.path import join, abspath, expanduser, basename
 
+from msk.actions.create import CreateAction
 from msk.console_action import ConsoleAction
-from msk.exceptions import MissingReadme
-from msk.repo_action import RepoData
-from msk.util import ask_for_github_credentials, skill_repo_name, ask_input, skills_kit_footer, \
-    create_or_edit_pr
+from msk.exceptions import MskException
+from msk.lazy import Lazy
+from msk.repo_action import SkillData
+from msk.util import ask_input, skills_kit_footer, \
+    create_or_edit_pr, ask_yes_no, skill_repo_name
 
 body_template = '''
 ## Info
@@ -25,63 +28,49 @@ This PR adds the new skill, [{skill_name}]({skill_url}), to the skills repo.
 
 class UploadAction(ConsoleAction):
     def __init__(self, args):
-        ConsoleAction.__init__(self, args)
-        self.folder = args.skill_folder
-        self.skill = SkillEntry.from_folder(self.folder)
+        folder = abspath(expanduser(args.skill_folder))
+        self.entry = SkillEntry.from_folder(folder)
+        skills_dir = abspath(expanduser(self.msm.skills_dir))
+        if join(skills_dir, basename(folder)) != folder:
+            raise MskException('Skill folder, {}, not directly within skills directory, {}.'.format(
+                args.skill_folder, self.msm.skills_dir
+            ))
+
+    git = Lazy(lambda s: Git(s.entry.path))  # type: Git
 
     @staticmethod
     def register(parser: ArgumentParser):
         parser.add_argument('skill_folder')
 
     def perform(self):
-        github = ask_for_github_credentials()
-        user = github.get_user()
-        repo = RepoData(SkillRepo(), lambda: github)
+        for i in listdir(self.entry.path):
+            if i.lower() == 'readme.md' and i != 'README.md':
+                shutil.move(join(self.entry.path, i), join(self.entry.path, 'README.md'))
 
-        git = Git(self.skill.path)
-        if not self.skill.url:
-            print('No GitHub repository found. Creating new one.')
-            repo_name = input('Repo Name: ')
-            repo_desc = input('Repo Description: ')
-            skill_repo = user.create_repo(repo_name, repo_desc)
-            self.skill.url = skill_repo.html_url
-            self.skill.author = user.login
-
-            if not isdir(join(self.skill.path, '.git')):
-                git.init()
-
-            if not git.rev_parse('HEAD'):  # No commits
-                if not isfile('.gitignore'):
-                    with open(join(self.skill.path, '.gitignore'), 'w') as f:
-                        f.write('\n'.join(['*.pyc', 'settings.json']))
-                git.add('.')
-                git.commit(message='Initial Commit')
-
-            git.remote('add', 'origin', skill_repo.html_url)
-            call(['git', 'push', '-u', 'origin', 'master'], cwd=git.working_dir)
+        creator = CreateAction(None, self.entry.name.replace('-skill', ''))
+        creator.path = self.entry.path
+        creator.initialize_template({'.git', '.gitignore', 'README.md'})
+        self.git.add('README.md')
+        creator.commit_changes()
+        skill_repo = creator.create_github_repo(lambda: input('Repo name:'))
+        if skill_repo:
+            self.entry.url = skill_repo.html_url
+            self.entry.author = self.user.login
         else:
-            skill_repo = github.get_repo(skill_repo_name(self.skill.url))
+            skill_repo = self.github.get_repo(skill_repo_name(self.entry.url))
 
         if not skill_repo.permissions.push:
             print('Warning: You do not have write permissions to the provided skill repo.')
-            resp = ask_input('Create a fork and use that instead? (Y/n)',
-                             lambda x: not x or x in 'yYnN')
-            if resp.lower() != 'n':
-                skill_repo = user.create_fork(skill_repo.full_name)
+            if ask_yes_no('Create a fork and use that instead? (Y/n)', True):
+                skill_repo = self.user.create_fork(skill_repo)
                 print('Created fork:', skill_repo.html_url)
-                git.remote('rename', 'origin', 'upstream')
-                git.remote('add', 'origin', skill_repo.html_url)
+                self.git.remote('rename', 'origin', 'upstream')
+                self.git.remote('add', 'origin', skill_repo.html_url)
 
-        self.skill.name = input('Enter a unique skill name (ie. npr-news or grocery-list): ')
-        branch = repo.add_skill(self.skill)
-        repo.setup_fork()
-        repo.push_to_fork(branch)
+        self.entry.name = input('Enter a unique skill name (ie. npr-news or grocery-list): ')
 
-        readme_files = [i for i in os.listdir(self.skill.path) if i.lower() == 'readme.md']
-        if not readme_files:
-            raise MissingReadme('Please create a readme using the readme creator')
-
-        with open(join(self.skill.path, readme_files[0])) as f:
+        readme_file = {i.lower(): i for i in os.listdir(self.entry.path)}['readme.md']
+        with open(join(self.entry.path, readme_file)) as f:
             readme = f.read()
 
         last_section = None
@@ -99,15 +88,18 @@ class UploadAction(ConsoleAction):
             description = sections['description']
         else:
             section_list = list(sections)
-            resp = ask_input('Which section contains the description?\n{}\n> '.format(
+            resp = ask_input('Which section contains the description?\n{}\n>'.format(
                 '\n'.join('{}. {}'.format(i, section) for i, section in enumerate(section_list, 1))
             ), lambda x: 0 < int(x) <= len(sections))
             description = section_list[int(resp) - 1]
 
+        branch = SkillData(self.entry).add_to_repo()
+        self.repo.push_to_fork(branch)
+
         pull = create_or_edit_pr(
-            title='Add {}'.format(self.skill.name), body=body_template.format(
-                description=description, skill_name=self.skill.name, skill_url=skill_repo.html_url
-            ), user=user, branch=branch, skills_repo=repo.github
+            title='Add {}'.format(self.entry.name), body=body_template.format(
+                description=description, skill_name=self.entry.name, skill_url=skill_repo.html_url
+            ), user=self.user, branch=branch, skills_repo=self.repo.hub
         )
 
         print('Created pull request: ', pull.html_url)

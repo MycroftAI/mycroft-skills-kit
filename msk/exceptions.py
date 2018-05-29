@@ -1,21 +1,21 @@
 from msm import MsmException
 
 
-class MshException(MsmException):
+class MskException(MsmException):
     pass
 
 
-class AlreadyUpdated(MshException):
+class AlreadyUpdated(MskException):
     pass
 
 
-class NotUploaded(MshException):
+class GithubRepoExists(MskException):
     pass
 
 
-class PRModified(MshException):
+class NotUploaded(MskException):
     pass
 
 
-class MissingReadme(MshException):
+class PRModified(MskException):
     pass
