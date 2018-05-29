@@ -2,13 +2,14 @@
 
 *Mycroft Skills Kit*
 
-A tool to help with uploading and upgrading Mycroft skills on the
+A tool to help with creating, uploading, and upgrading Mycroft skills on the
 [skills repo](https://github.com/mycroftai/mycroft-skills).
 
 ## Features
 
- - Upgrade an existing skill
+ - Create a new skill
  - Upload a new skill
+ - Upgrade an existing skill
 
 ## Install
 
@@ -19,6 +20,7 @@ pip3 install msk
 ## Usage
 
 ```bash
-msk upgrade /opt/mycroft/skills/myskill
+msk create
 msk upload /opt/mycroft/skills/mynewskill
+msk upgrade /opt/mycroft/skills/myskill
 ```
