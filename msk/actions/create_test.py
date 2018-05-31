@@ -85,6 +85,25 @@ class AdaptTestCreator(TestCreator):
     parts_regex = r'''\. (require|optionally) \( ['"]([a-zA-Z]+)['"] \)'''.replace(' ', '\s*')
     intent_recipe = Lazy(lambda s: s.intent_recipes[s.intent_name])
 
+    @Lazy
+    def utterance(self):
+        while True:
+            utterance = ask_input(
+                'Enter an example query:',
+                lambda x: x
+            )
+
+            missing_vocabs = [
+                i for i in self.intent_recipe['require']
+                if not any(j in utterance for j in self.vocab_defs.get(i, []))
+            ]
+            if missing_vocabs:
+                print('Missing the following vocab:', ', '.join(missing_vocabs))
+                if ask_yes_no('Continue anyways? (y/N)', False):
+                    return utterance
+            else:
+                return utterance
+
     def extract_recipe(self, recipe_str):
         parts = {'require': [], 'optionally': []}
         for part_match in re.finditer(self.parts_regex, recipe_str):
