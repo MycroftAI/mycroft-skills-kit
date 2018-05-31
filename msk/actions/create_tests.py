@@ -159,6 +159,7 @@ class CreateTestsAction(ConsoleAction):
                     utterance_left = utterance_left.replace(vocab_value, '')
             if utterance_data:
                 test_json['expected_data'] = utterance_data
+        test_json['intent_type'] = intent_name.replace('.intent', '')
         return test_json
 
     def generate_adapt_test_case(self, intent_name: str, intent_vocabs: dict) -> dict:
