@@ -26,13 +26,195 @@ import re
 from argparse import ArgumentParser
 from glob import glob
 from os import makedirs
-from os.path import join, isdir, basename, isfile
+from os.path import join, isdir, basename, isfile, splitext
 from random import shuffle
-from typing import Dict, Iterable
+from typing import Dict
 
 from msk.console_action import ConsoleAction
 from msk.exceptions import MskException
+from msk.lazy import Lazy
 from msk.util import ask_yes_no, ask_input, read_file, read_lines, ask_choice
+
+
+class TestCreator:
+    def __init__(self, folder):
+        self.folder = folder
+
+    init_file = Lazy(lambda s: join(s.folder, '__init__.py'))
+    init_content = Lazy(lambda s: read_file(s.init_file) if isfile(s.init_file) else '')
+    utterance = Lazy(lambda s: ask_input('Enter an example query:', lambda x: x.strip()))
+    expected_dialog = Lazy(lambda s: ask_input(
+        'Expected dialog (leave empty to skip):'
+    ).replace('.dialog', ''))
+
+    padatious_creator = Lazy(lambda s: PadatiousTestCreator(s.folder))  # type: PadatiousTestCreator
+    adapt_creator = Lazy(lambda s: AdaptTestCreator(s.folder))  # type: AdaptTestCreator
+    intent_choices = Lazy(lambda s: list(chain(
+        s.adapt_creator.intent_recipes,
+        s.padatious_creator.intent_names
+    )))
+
+    @Lazy
+    def intent_name(self):
+        if not self.intent_choices:
+            raise MskException('No existing intents found. Please create some first')
+        return ask_choice(
+            'Which intent would you like to test?', self.intent_choices
+        )
+
+
+class AdaptTestCreator(TestCreator):
+    """
+    Extracts Adapt intents from the source code
+
+    Adapt's intents are made up of two components:
+     - The "vocab definitions": words associated with a vocab name
+     - The "intent recipe": list of vocab keywords that are required and optional for an intent
+    """
+
+    intent_regex = (
+        r'''@intent_handler  \( IntentBuilder \( ['"]['"] \)(('''
+        r''' \. (optionally|require) \( ['"][a-zA-Z]+['"] \))*)\)  \n'''
+        r'''  def ([a-z_]+)'''
+    ).replace('  ', r'[\s\n]*').replace(' ', r'\s*')
+
+    parts_regex = r'''\. (require|optionally) \( ['"]([a-zA-Z]+)['"] \)'''.replace(' ', '\s*')
+    intent_recipe = Lazy(lambda s: s.intent_recipes[s.intent_name])
+
+    def extract_recipe(self, recipe_str):
+        parts = {'require': [], 'optionally': []}
+        for part_match in re.finditer(self.parts_regex, recipe_str):
+            parts[part_match.group(1)].append(part_match.group(2))
+        return parts
+
+    @Lazy
+    def intent_recipes(self) -> Dict[str, Dict[str, list]]:
+        return {
+            match.group(4): self.extract_recipe(match.group(1))
+            for match in re.finditer(self.intent_regex, self.init_content)
+        }
+
+    @Lazy
+    def vocab_defs(self):
+        return {
+            splitext(basename(content_file))[0]: list(chain(*(
+                map(str.strip, i.split('|'))
+                for i in read_lines(content_file)
+            )))
+            for content_file in
+            glob(join(self.folder, 'vocab', 'en-us', '*.voc')) +
+            glob(join(self.folder, 'regex', 'en-us', '*.rx'))
+        }
+
+    @Lazy
+    def utterance_data(self):
+        utterance_left = self.utterance.lower()
+        utterance_data = {}
+
+        for key, start_message in [
+            ('require', 'Required'),
+            ('optionally', 'Optional')
+        ]:
+            if self.intent_recipe[key]:
+                print('\n===', start_message, 'Tags', '===')
+            for vocab_name in self.intent_recipe[key]:
+                vocab_value = ask_input(
+                    vocab_name + ':', lambda x: not x or x.lower() in utterance_left,
+                    'Response must be in the remaining utterance: ' + utterance_left
+                ).strip()
+                if vocab_value:
+                    utterance_data[vocab_name] = vocab_value
+                    utterance_left = utterance_left.replace(vocab_value.lower(), '')
+        print()
+        return utterance_data
+
+    @Lazy
+    def test_case(self) -> dict:
+        if self.intent_name not in self.intent_recipes:
+            return {}
+
+        for key, name in [('require', 'Required'), ('optionally', 'Optional')]:
+            if self.intent_recipe[key]:
+                print('===', name, 'Vocab', '===')
+            for vocab_name in self.intent_recipe[key]:
+                words = self.vocab_defs.get(vocab_name, ['?'])
+                print('{}: {}'.format(vocab_name, ', '.join(
+                    words[:6] + ['...'] * (len(words) > 6)
+                )))
+            if self.intent_recipe[key]:
+                print()
+
+        test_case = {'utterance': self.utterance}
+        if ask_yes_no('Tag intent match? (Y/n)', True):
+            test_case['intent'] = self.utterance_data
+        test_case['intent_type'] = self.intent_name
+        test_case['expected_dialog'] = self.expected_dialog
+        return test_case
+
+
+class PadatiousTestCreator(TestCreator):
+    intent_files = Lazy(lambda s: glob(join(s.folder, 'vocab', 'en-us', '*.intent')))
+    intent_names = Lazy(lambda s: {
+        basename(intent_file): intent_file for intent_file in s.intent_files
+    })
+    intent_file = Lazy(lambda s: s.intent_names.get(s.intent_name, ''))
+    entities = Lazy(lambda s: {
+        splitext(basename(entity_file))[0]: read_lines(entity_file)
+        for entity_file in glob(join(s.folder, 'vocab', 'en-us', '*.entity'))
+    })
+    intent_lines = Lazy(lambda s: list(read_lines(s.intent_file)))
+    entity_names = Lazy(lambda s: set(re.findall(r'(?<={)[a-z_]+(?=})', '\n'.join(s.intent_lines))))
+
+    @Lazy
+    def entities_str(self, s='') -> str:
+        if self.entities:
+            s += '=== Entity Examples ==='
+        for entity_name, lines in self.entities.items():
+            sample = ', '.join(lines)
+            s += '{}: {}'.format(
+                entity_name, sample[:50] + '...' * (len(sample) > 50)
+            )
+        return s
+
+    @Lazy
+    def intent_str(self, s='') -> str:
+        shuffle(self.intent_lines)
+        s += '=== Intent Examples ==='
+        s += '\n'.join(self.intent_lines[:6] + ['...'] * (len(self.intent_lines) > 6))
+        return s
+
+    @Lazy
+    def utterance_data(self) -> dict:
+        utterance_data = {}
+        utterance_left = self.utterance
+        for entity_name in self.entity_names:
+            vocab_value = ask_input(
+                entity_name + ':', lambda x: not x or x in utterance_left,
+                'Response must be in the remaining utterance: ' + utterance_left
+            ).strip()
+            if vocab_value:
+                utterance_data[entity_name] = vocab_value
+                utterance_left = utterance_left.replace(vocab_value, '')
+        return utterance_data
+
+
+    @Lazy
+    def test_case(self) -> {}:
+        if self.intent_name not in self.intent_names:
+            return {}
+
+        print()
+        print(self.intent_str)
+        print()
+        print(self.entities_str)
+        print()
+
+        test_case = {'utterance': self.utterance}
+        if self.entity_names and ask_yes_no('Tag intent match? (Y/n)', True):
+            test_case['expected_data'] = self.utterance_data
+        test_case['intent_type'] = self.intent_name.replace('.intent', '')
+        test_case['expected_dialog'] = self.expected_dialog
+        return test_case
 
 
 class CreateTestsAction(ConsoleAction):
@@ -42,49 +224,6 @@ class CreateTestsAction(ConsoleAction):
     @staticmethod
     def register(parser: ArgumentParser):
         parser.add_argument('skill_folder')
-
-    def extract_adapt_vocabs(self) -> Dict[str, Dict[str, list]]:
-        init_file = read_file(self.folder, '__init__.py')
-
-        regex = (
-            r'''@intent_handler  \( IntentBuilder \( ['"]['"] \)(('''
-            ''' \. (optionally|require) \( ['"][a-zA-Z]+['"] \))*)\)  \n'''
-            '''  def ([a-z_]+)'''
-        ).replace('  ', r'[\s\n]*').replace(' ', r'\s*')
-
-        vocab = {}
-
-        for match in re.finditer(regex, init_file):
-            parts_str = match.group(1)
-            intent_name = match.group(4)
-
-            parts_regex = r'''\. (require|optionally) \( ['"]([a-zA-Z]+)['"] \)'''
-            parts_regex = parts_regex.replace(' ', '\s*')
-
-            parts = {'require': [], 'optionally': []}
-            for part_match in re.finditer(parts_regex, parts_str):
-                parts[part_match.group(1)].append(part_match.group(2))
-
-            vocab[intent_name] = parts
-        return vocab
-
-    def load_adapt_vocab(self, vocab_names: Iterable[str]):
-        vocab_definitions = {}
-        for vocab_name in vocab_names:
-            content_file = join(self.folder, 'vocab', 'en-us', vocab_name + '.voc')
-            if not isfile(content_file):
-                content_file = join(self.folder, 'regex', 'en-us', vocab_name + '.rx')
-                if not isfile(content_file):
-                    continue
-            vocab_definitions[vocab_name] = list(chain(*(
-                map(str.strip, i.split('|'))
-                for i in read_lines(content_file)
-            )))
-        return vocab_definitions
-
-    def extract_padatious_intents(self):
-        intent_files = glob(join(self.folder, 'vocab', 'en-us', '*.intent'))
-        return {basename(intent_file): intent_file for intent_file in intent_files}
 
     def get_intent_file(self, name):
         return join(self.folder, 'test', 'intent', name)
@@ -98,121 +237,20 @@ class CreateTestsAction(ConsoleAction):
             if not isfile(name):
                 return name
 
-    def ask_adapt_example(self, intent_vocabs):
-        utterance = ask_input('Enter an example query:')
-        utterance_left = utterance.lower()
-        utterance_data = {}
-
-        if not ask_yes_no('Tag intent match? (Y/n)', True):
-            return utterance, utterance_data
-
-        for key, start_message in [
-            ('require', 'Required'),
-            ('optionally', 'Optional')
-        ]:
-            if intent_vocabs[key]:
-                print('\n===', start_message, 'Tags', '===')
-            for vocab_name in intent_vocabs[key]:
-                vocab_value = ask_input(
-                    vocab_name + ':', lambda x: not x or x.lower() in utterance_left,
-                    'Response must be in the remaining utterance: ' + utterance_left
-                ).strip()
-                if vocab_value:
-                    utterance_data[vocab_name] = vocab_value
-                    utterance_left = utterance_left.replace(vocab_value.lower(), '')
-        print()
-        return utterance, utterance_data
-
-    def generate_padatious_test_case(self, intent_name: str, intent_file: str) -> dict:
-        lines = list(read_lines(intent_file))
-        shuffle(lines)
-        print('\n=== Intent Examples ===')
-        print('\n'.join(lines[:6] + ['...'] * (len(lines) > 6)))
-        entity_names = set(re.findall(r'(?<={)[a-z_]+(?=})', '\n'.join(lines)))
-        entities = {
-            entity_name: read_lines(entity_file)
-            for entity_name in entity_names
-            for entity_file in [join(self.folder, 'vocab', 'en-us', entity_name + '.entity')]
-            if isfile(entity_file)
-        }
-        if entities:
-            print('\n=== Entities ===')
-        for entity_name, lines in entities.items():
-            sample = ', '.join(lines)
-            print('{}: {}'.format(
-                entity_name, sample[:50] + '...' * (len(sample) > 50)
-            ))
-        print()
-
-        test_json = {}
-        test_json['utterance'] = utterance = ask_input('Enter an example query:')
-        if entity_names and ask_yes_no('Tag intent match? (Y/n)', True):
-            utterance_data = {}
-            utterance_left = utterance
-            for entity_name in entity_names:
-                vocab_value = ask_input(
-                    entity_name + ':', lambda x: not x or x in utterance_left,
-                    'Response must be in the remaining utterance: ' + utterance_left
-                ).strip()
-                if vocab_value:
-                    utterance_data[entity_name] = vocab_value
-                    utterance_left = utterance_left.replace(vocab_value, '')
-            if utterance_data:
-                test_json['expected_data'] = utterance_data
-        test_json['intent_type'] = intent_name.replace('.intent', '')
-        return test_json
-
-    def generate_adapt_test_case(self, intent_name: str, intent_vocabs: dict) -> dict:
-        vocab_defs = self.load_adapt_vocab(chain(*intent_vocabs.values()))
-        for key, name in [('require', 'Required'), ('optionally', 'Optional')]:
-            if intent_vocabs[key]:
-                print('===', name, 'Vocab', '===')
-            for vocab_name in intent_vocabs[key]:
-                words = vocab_defs.get(vocab_name, ['?'])
-                print('{}: {}'.format(vocab_name, ', '.join(
-                    words[:6] + ['...'] * (len(words) > 6)
-                )))
-            if intent_vocabs[key]:
-                print()
-
-        test_json = {}
-        utterance, utterance_data = self.ask_adapt_example(intent_vocabs)
-        if utterance_data:
-            test_json['intent'] = utterance_data
-        test_json['utterance'] = utterance
-        test_json['intent_type'] = intent_name
-        return test_json
-
     def perform(self):
         if not isdir(self.folder):
             raise MskException('Skill folder at {} does not exist'.format(self.folder))
+
         if not isfile(join(self.folder, '__init__.py')):
             if not ask_yes_no("Folder doesn't appear to be a skill. Continue? (y/N)", False):
                 return
 
         makedirs(join(self.folder, 'test', 'intent'), exist_ok=True)
 
-        adapt_intents = self.extract_adapt_vocabs()
-        padatious_intents = self.extract_padatious_intents()
-        intent_choices = list(chain(padatious_intents, adapt_intents))
+        creator = TestCreator(self.folder)
+        test_case = creator.adapt_creator.test_case or creator.padatious_creator.test_case
 
-        if not intent_choices:
-            raise MskException('No existing intents found. Please create some first')
-
-        intent_name = ask_choice('Which intent would you like to test?', intent_choices)
-
-        if intent_name in padatious_intents:
-            intent_file = padatious_intents[intent_name]
-            test_json = self.generate_padatious_test_case(intent_name, intent_file)
-        else:
-            intent_vocabs = adapt_intents[intent_name]
-            test_json = self.generate_adapt_test_case(intent_name, intent_vocabs)
-
-        expected_dialog = ask_input('Expected dialog (leave empty to skip):')
-        if expected_dialog:
-            test_json['expected_dialog'] = expected_dialog.replace('.dialog', '')
-
-        intent_test_file = self.find_intent_test_file(intent_name)
+        intent_test_file = self.find_intent_test_file(creator.intent_name)
         with open(intent_test_file, 'w') as f:
-            json.dump(test_json, f, indent=4)
+            json.dump(test_case, f, indent=4)
         print('Generated test file:', intent_test_file)
