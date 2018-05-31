@@ -217,7 +217,7 @@ class PadatiousTestCreator(TestCreator):
         return test_case
 
 
-class CreateTestsAction(ConsoleAction):
+class CreateTestAction(ConsoleAction):
     def __init__(self, args):
         self.folder = args.skill_folder
 
