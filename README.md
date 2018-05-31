@@ -8,7 +8,8 @@ A tool to help with creating, uploading, and upgrading Mycroft skills on the
 ## Features
 
  - Create a new skill
- - Upload a new skill
+ - Create intent tests for a skill
+ - Upload a skill
  - Upgrade an existing skill
 
 ## Install
@@ -21,6 +22,7 @@ pip3 install msk
 
 ```bash
 msk create
-msk upload /opt/mycroft/skills/mynewskill
+msk create-tests /opt/mycroft/skills/myskill
+msk upload /opt/mycroft/skills/myskill
 msk upgrade /opt/mycroft/skills/myskill
 ```
