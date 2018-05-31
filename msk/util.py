@@ -23,6 +23,7 @@ import atexit
 
 import os
 from contextlib import contextmanager
+from functools import wraps
 from getpass import getpass
 from github import Github, GithubException
 from github.Repository import Repository
@@ -92,6 +93,7 @@ def ask_input(message: str, validator=lambda x: True, on_fail='Invalid entry'):
 
 
 def ask_choice(message: str, choices: list, allow_empty=False) -> Optional[str]:
+    print()
     print(message)
     print('\n'.join(
         '{}. {}'.format(i + 1, choice)
@@ -162,3 +164,16 @@ def read_file(*path):
 def read_lines(*path):
     with open(join(*path)) as f:
         return (i for i in (i.strip() for i in f.readlines()) if i)
+
+
+def serialized(func):
+    """Write a serializer by yielding each line of output"""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return '\n'.join(
+            ' '.join(parts) if isinstance(parts, tuple) else parts
+            for parts in func(*args, **kwargs)
+        )
+
+    return wrapper

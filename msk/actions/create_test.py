@@ -33,7 +33,7 @@ from typing import Dict
 from msk.console_action import ConsoleAction
 from msk.exceptions import MskException
 from msk.lazy import Lazy
-from msk.util import ask_yes_no, ask_input, read_file, read_lines, ask_choice
+from msk.util import ask_yes_no, ask_input, read_file, read_lines, ask_choice, serialized
 
 
 class TestCreator:
@@ -119,8 +119,11 @@ class AdaptTestCreator(TestCreator):
             ('require', 'Required'),
             ('optionally', 'Optional')
         ]:
-            if self.intent_recipe[key]:
-                print('\n===', start_message, 'Tags', '===')
+            if not self.intent_recipe[key]:
+                continue
+
+            print()
+            print('===', start_message, 'Tags', '===')
             for vocab_name in self.intent_recipe[key]:
                 vocab_value = ask_input(
                     vocab_name + ':', lambda x: not x or x.lower() in utterance_left,
@@ -129,30 +132,38 @@ class AdaptTestCreator(TestCreator):
                 if vocab_value:
                     utterance_data[vocab_name] = vocab_value
                     utterance_left = utterance_left.replace(vocab_value.lower(), '')
-        print()
+
         return utterance_data
+
+    @Lazy
+    @serialized
+    def recipe_str(self):
+        for key, name in [('require', 'Required'), ('optionally', 'Optional')]:
+            if not self.intent_recipe[key]:
+                continue
+
+            yield ''
+            yield '===', name, 'Vocab', '==='
+            for vocab_name in self.intent_recipe[key]:
+                words = self.vocab_defs.get(vocab_name, ['?'])
+                yield '{}: {}'.format(vocab_name, ', '.join(
+                    words[:6] + ['...'] * (len(words) > 6)
+                ))
 
     @Lazy
     def test_case(self) -> dict:
         if self.intent_name not in self.intent_recipes:
             return {}
 
-        for key, name in [('require', 'Required'), ('optionally', 'Optional')]:
-            if self.intent_recipe[key]:
-                print('===', name, 'Vocab', '===')
-            for vocab_name in self.intent_recipe[key]:
-                words = self.vocab_defs.get(vocab_name, ['?'])
-                print('{}: {}'.format(vocab_name, ', '.join(
-                    words[:6] + ['...'] * (len(words) > 6)
-                )))
-            if self.intent_recipe[key]:
-                print()
+        print(self.recipe_str)
+        print()
 
         test_case = {'utterance': self.utterance}
-        if ask_yes_no('Tag intent match? (Y/n)', True):
+        if self.utterance_data:
             test_case['intent'] = self.utterance_data
         test_case['intent_type'] = self.intent_name
-        test_case['expected_dialog'] = self.expected_dialog
+        if self.expected_dialog:
+            test_case['expected_dialog'] = self.expected_dialog
         return test_case
 
 
@@ -170,37 +181,40 @@ class PadatiousTestCreator(TestCreator):
     entity_names = Lazy(lambda s: set(re.findall(r'(?<={)[a-z_]+(?=})', '\n'.join(s.intent_lines))))
 
     @Lazy
-    def entities_str(self, s='') -> str:
-        if self.entities:
-            s += '=== Entity Examples ===\n'
+    @serialized
+    def entities_str(self) -> str:
+        if not self.entities:
+            return
+        yield '=== Entity Examples ==='
         for entity_name, lines in self.entities.items():
             sample = ', '.join(lines)
-            s += '{}: {}\n'.format(
+            yield '{}: {}'.format(
                 entity_name, sample[:50] + '...' * (len(sample) > 50)
             )
-        return s
 
     @Lazy
-    def intent_str(self, s='') -> str:
+    @serialized
+    def intent_str(self) -> str:
         shuffle(self.intent_lines)
-        s += '=== Intent Examples ===\n'
-        s += '\n'.join(self.intent_lines[:6] + ['...'] * (len(self.intent_lines) > 6)) + '\n'
-        return s
+        yield '=== Intent Examples ==='
+        yield '\n'.join(self.intent_lines[:6] + ['...'] * (len(self.intent_lines) > 6))
 
     @Lazy
     def utterance_data(self) -> dict:
         utterance_data = {}
         utterance_left = self.utterance
+
+        print()
+        print('=== Entity Tags ===')
         for entity_name in self.entity_names:
-            vocab_value = ask_input(
+            entity_value = ask_input(
                 entity_name + ':', lambda x: not x or x in utterance_left,
                 'Response must be in the remaining utterance: ' + utterance_left
             ).strip()
-            if vocab_value:
-                utterance_data[entity_name] = vocab_value
-                utterance_left = utterance_left.replace(vocab_value, '')
+            if entity_value:
+                utterance_data[entity_name] = entity_value
+                utterance_left = utterance_left.replace(entity_value, '')
         return utterance_data
-
 
     @Lazy
     def test_case(self) -> {}:
@@ -209,13 +223,16 @@ class PadatiousTestCreator(TestCreator):
 
         print()
         print(self.intent_str)
+        print()
         print(self.entities_str)
+        print()
 
         test_case = {'utterance': self.utterance}
-        if self.entity_names and ask_yes_no('Tag intent match? (Y/n)', True):
+        if self.entity_names and self.utterance_data:
             test_case['expected_data'] = self.utterance_data
         test_case['intent_type'] = self.intent_name.replace('.intent', '')
-        test_case['expected_dialog'] = self.expected_dialog
+        if self.expected_dialog:
+            test_case['expected_dialog'] = self.expected_dialog
         return test_case
 
 
