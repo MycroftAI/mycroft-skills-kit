@@ -91,7 +91,7 @@ def ask_input(message: str, validator=lambda x: True, on_fail='Invalid entry'):
             print(o)
 
 
-def ask_choice(message: str, choices: list) -> str:
+def ask_choice(message: str, choices: list, allow_empty=False) -> Optional[str]:
     print(message)
     print('\n'.join(
         '{}. {}'.format(i + 1, choice)
@@ -99,7 +99,9 @@ def ask_choice(message: str, choices: list) -> str:
     ))
     print()
 
-    choice = ask_input('>', lambda x: 0 < int(x) <= len(choices))
+    choice = ask_input('>', lambda x: not x and allow_empty or 0 < int(x) <= len(choices))
+    if not choice:
+        return None
     return choices[int(choice) - 1]
 
 

@@ -43,9 +43,13 @@ class TestCreator:
     init_file = Lazy(lambda s: join(s.folder, '__init__.py'))
     init_content = Lazy(lambda s: read_file(s.init_file) if isfile(s.init_file) else '')
     utterance = Lazy(lambda s: ask_input('Enter an example query:', lambda x: x.strip()))
-    expected_dialog = Lazy(lambda s: ask_input(
-        'Expected dialog (leave empty to skip):'
-    ).replace('.dialog', ''))
+    dialogs = Lazy(lambda s: [
+        splitext(basename(i))[0]
+        for i in glob(join(s.folder, 'dialog', 'en-us', '*.dialog'))
+    ])
+    expected_dialog = Lazy(lambda s: ask_choice(
+        'Choose expected dialog (leave empty to skip).', s.dialogs, allow_empty=True
+    ))
 
     padatious_creator = Lazy(lambda s: PadatiousTestCreator(s.folder))  # type: PadatiousTestCreator
     adapt_creator = Lazy(lambda s: AdaptTestCreator(s.folder))  # type: AdaptTestCreator
@@ -168,10 +172,10 @@ class PadatiousTestCreator(TestCreator):
     @Lazy
     def entities_str(self, s='') -> str:
         if self.entities:
-            s += '=== Entity Examples ==='
+            s += '=== Entity Examples ===\n'
         for entity_name, lines in self.entities.items():
             sample = ', '.join(lines)
-            s += '{}: {}'.format(
+            s += '{}: {}\n'.format(
                 entity_name, sample[:50] + '...' * (len(sample) > 50)
             )
         return s
@@ -179,8 +183,8 @@ class PadatiousTestCreator(TestCreator):
     @Lazy
     def intent_str(self, s='') -> str:
         shuffle(self.intent_lines)
-        s += '=== Intent Examples ==='
-        s += '\n'.join(self.intent_lines[:6] + ['...'] * (len(self.intent_lines) > 6))
+        s += '=== Intent Examples ===\n'
+        s += '\n'.join(self.intent_lines[:6] + ['...'] * (len(self.intent_lines) > 6)) + '\n'
         return s
 
     @Lazy
@@ -205,9 +209,7 @@ class PadatiousTestCreator(TestCreator):
 
         print()
         print(self.intent_str)
-        print()
         print(self.entities_str)
-        print()
 
         test_case = {'utterance': self.utterance}
         if self.entity_names and ask_yes_no('Tag intent match? (Y/n)', True):
