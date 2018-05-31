@@ -23,6 +23,7 @@ import atexit
 
 import os
 from contextlib import contextmanager
+from difflib import SequenceMatcher
 from functools import wraps
 from getpass import getpass
 from github import Github, GithubException
@@ -101,10 +102,25 @@ def ask_choice(message: str, choices: list, allow_empty=False) -> Optional[str]:
     ))
     print()
 
-    choice = ask_input('>', lambda x: not x and allow_empty or 0 < int(x) <= len(choices))
-    if not choice:
-        return None
-    return choices[int(choice) - 1]
+    def find_match(x):
+        if not x and allow_empty:
+            return None
+        try:
+            return choices[int(x) - 1]
+        except (ValueError, IndexError):
+            pass
+
+        def calc_conf(y):
+            return SequenceMatcher(a=x, b=y).ratio()
+        best_choice = max(choices, key=calc_conf)
+        best_conf = calc_conf(best_choice)
+        if best_conf > 0.8:
+            return best_choice
+        raise ValueError
+
+    return find_match(ask_input(
+        '>', find_match, 'Please enter one of the options.'
+    ))
 
 
 def ask_input_lines(message: str, bullet: str = '>') -> list:
