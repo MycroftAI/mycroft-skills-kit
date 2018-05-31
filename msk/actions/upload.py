@@ -32,7 +32,7 @@ from msk.console_action import ConsoleAction
 from msk.exceptions import MskException
 from msk.lazy import Lazy
 from msk.repo_action import SkillData
-from msk.util import ask_input, skills_kit_footer, \
+from msk.util import skills_kit_footer, \
     create_or_edit_pr, ask_yes_no, skill_repo_name, read_file, ask_choice
 
 body_template = '''
