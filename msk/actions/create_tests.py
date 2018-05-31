@@ -225,12 +225,9 @@ class CreateTestsAction(ConsoleAction):
     def register(parser: ArgumentParser):
         parser.add_argument('skill_folder')
 
-    def get_intent_file(self, name):
-        return join(self.folder, 'test', 'intent', name)
-
     def find_intent_test_file(self, intent_name):
         def create_name(i):
-            return self.get_intent_file('{}.{}.intent.json'.format(intent_name, i))
+            return join(self.folder, 'test', 'intent', '{}.{}.intent.json'.format(intent_name, i))
 
         for i in count():
             name = create_name(i)
