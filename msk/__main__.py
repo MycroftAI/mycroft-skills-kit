@@ -24,6 +24,7 @@ import sys
 from argparse import ArgumentParser
 
 from msk.actions.create import CreateAction
+from msk.actions.create_tests import CreateTestsAction
 from msk.actions.upgrade import UpgradeAction
 from msk.actions.upload import UploadAction
 from msk.exceptions import MskException
@@ -31,7 +32,8 @@ from msk.exceptions import MskException
 console_actions = {
     'upgrade': UpgradeAction,
     'upload': UploadAction,
-    'create': CreateAction
+    'create': CreateAction,
+    'create-tests': CreateTestsAction
 }
 
 

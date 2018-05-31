@@ -33,7 +33,7 @@ from msk.exceptions import MskException
 from msk.lazy import Lazy
 from msk.repo_action import SkillData
 from msk.util import ask_input, skills_kit_footer, \
-    create_or_edit_pr, ask_yes_no, skill_repo_name
+    create_or_edit_pr, ask_yes_no, skill_repo_name, read_file
 
 body_template = '''
 ## Info
@@ -91,8 +91,7 @@ class UploadAction(ConsoleAction):
         self.entry.name = input('Enter a unique skill name (ie. npr-news or grocery-list): ')
 
         readme_file = {i.lower(): i for i in os.listdir(self.entry.path)}['readme.md']
-        with open(join(self.entry.path, readme_file)) as f:
-            readme = f.read()
+        readme = read_file(self.entry.path, readme_file)
 
         last_section = None
         sections = {last_section: ''}

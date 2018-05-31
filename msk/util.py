@@ -28,6 +28,7 @@ from github import Github, GithubException
 from github.Repository import Repository
 from msm import SkillEntry
 from os import chmod
+from os.path import join
 from tempfile import mkstemp
 from typing import Optional
 
@@ -77,7 +78,7 @@ def skill_repo_name(url: str):
     return '{}/{}'.format(SkillEntry.extract_author(url), SkillEntry.extract_repo_name(url))
 
 
-def ask_input(message, validator=lambda x: True, fail_message='Invalid entry'):
+def ask_input(message, validator=lambda x: True, on_fail='Invalid entry'):
     while True:
         resp = input(message + ' ')
         try:
@@ -85,7 +86,9 @@ def ask_input(message, validator=lambda x: True, fail_message='Invalid entry'):
                 return resp
         except Exception:
             pass
-        print(fail_message)
+        o = on_fail(resp) if callable(on_fail) else on_fail
+        if isinstance(o, str):
+            print(o)
 
 
 def ask_input_lines(message: str, bullet: str = '>') -> list:
@@ -135,3 +138,13 @@ def print_error(exception):
         yield
     except exception as e:
         print('{}: {}'.format(exception.__name__, e))
+
+
+def read_file(*path):
+    with open(join(*path)) as f:
+        return f.read()
+
+
+def read_lines(*path):
+    with open(join(*path)) as f:
+        return (i for i in (i.strip() for i in f.readlines()) if i)
