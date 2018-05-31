@@ -82,7 +82,7 @@ def skill_repo_name(url: str):
 
 def ask_input(message: str, validator=lambda x: True, on_fail='Invalid entry'):
     while True:
-        resp = input(message + ' ')
+        resp = input(message + ' ').strip()
         try:
             if validator(resp):
                 return resp

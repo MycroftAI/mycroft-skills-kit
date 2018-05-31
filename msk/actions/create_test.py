@@ -42,7 +42,7 @@ class TestCreator:
 
     init_file = Lazy(lambda s: join(s.folder, '__init__.py'))
     init_content = Lazy(lambda s: read_file(s.init_file) if isfile(s.init_file) else '')
-    utterance = Lazy(lambda s: ask_input('Enter an example query:', lambda x: x.strip()))
+    utterance = Lazy(lambda s: ask_input('Enter an example query:', lambda x: x))
     dialogs = Lazy(lambda s: [
         splitext(basename(i))[0]
         for i in glob(join(s.folder, 'dialog', 'en-us', '*.dialog'))
@@ -128,7 +128,7 @@ class AdaptTestCreator(TestCreator):
                 vocab_value = ask_input(
                     vocab_name + ':', lambda x: not x or x.lower() in utterance_left,
                     'Response must be in the remaining utterance: ' + utterance_left
-                ).strip()
+                )
                 if vocab_value:
                     utterance_data[vocab_name] = vocab_value
                     utterance_left = utterance_left.replace(vocab_value.lower(), '')
@@ -210,7 +210,7 @@ class PadatiousTestCreator(TestCreator):
             entity_value = ask_input(
                 entity_name + ':', lambda x: not x or x in utterance_left,
                 'Response must be in the remaining utterance: ' + utterance_left
-            ).strip()
+            )
             if entity_value:
                 utterance_data[entity_name] = entity_value
                 utterance_left = utterance_left.replace(entity_value, '')
