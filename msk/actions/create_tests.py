@@ -30,10 +30,9 @@ from os.path import join, isdir, basename, isfile
 from random import shuffle
 from typing import Dict, Iterable
 
-from msk.actions.create import CreateAction
 from msk.console_action import ConsoleAction
 from msk.exceptions import MskException
-from msk.util import ask_yes_no, ask_input, read_file, read_lines
+from msk.util import ask_yes_no, ask_input, read_file, read_lines, ask_choice
 
 
 class CreateTestsAction(ConsoleAction):
@@ -124,21 +123,71 @@ class CreateTestsAction(ConsoleAction):
         print()
         return utterance, utterance_data
 
+    def generate_padatious_test_case(self, intent_name: str, intent_file: str) -> dict:
+        lines = list(read_lines(intent_file))
+        shuffle(lines)
+        print('\n=== Intent Examples ===')
+        print('\n'.join(lines[:6] + ['...'] * (len(lines) > 6)))
+        entity_names = set(re.findall(r'(?<={)[a-z_]+(?=})', '\n'.join(lines)))
+        entities = {
+            entity_name: read_lines(entity_file)
+            for entity_name in entity_names
+            for entity_file in [join(self.folder, 'vocab', 'en-us', entity_name + '.entity')]
+            if isfile(entity_file)
+        }
+        if entities:
+            print('\n=== Entities ===')
+        for entity_name, lines in entities.items():
+            sample = ', '.join(lines)
+            print('{}: {}'.format(
+                entity_name, sample[:50] + '...' * (len(sample) > 50)
+            ))
+        print()
+
+        test_json = {}
+        test_json['utterance'] = utterance = ask_input('Enter an example query:')
+        if entity_names and ask_yes_no('Tag intent match? (Y/n)', True):
+            utterance_data = {}
+            utterance_left = utterance
+            for entity_name in entity_names:
+                vocab_value = ask_input(
+                    entity_name + ':', lambda x: not x or x in utterance_left,
+                    'Response must be in the remaining utterance: ' + utterance_left
+                ).strip()
+                if vocab_value:
+                    utterance_data[entity_name] = vocab_value
+                    utterance_left = utterance_left.replace(vocab_value, '')
+            if utterance_data:
+                test_json['expected_data'] = utterance_data
+        return test_json
+
+    def generate_adapt_test_case(self, intent_name: str, intent_vocabs: dict) -> dict:
+        vocab_defs = self.load_adapt_vocab(chain(*intent_vocabs.values()))
+        for key, name in [('require', 'Required'), ('optionally', 'Optional')]:
+            if intent_vocabs[key]:
+                print('===', name, 'Vocab', '===')
+            for vocab_name in intent_vocabs[key]:
+                words = vocab_defs.get(vocab_name, ['?'])
+                print('{}: {}'.format(vocab_name, ', '.join(
+                    words[:6] + ['...'] * (len(words) > 6)
+                )))
+            if intent_vocabs[key]:
+                print()
+
+        test_json = {}
+        utterance, utterance_data = self.ask_adapt_example(intent_vocabs)
+        if utterance_data:
+            test_json['intent'] = utterance_data
+        test_json['utterance'] = utterance
+        test_json['intent_type'] = intent_name
+        return test_json
+
     def perform(self):
-        if not isdir(self.folder) or not isfile(join(self.folder, '__init__.py')):
-            if not isdir(self.folder):
-                message = 'Skill folder at {} does not exist. Create a new skill? (y/N)'.format(
-                    self.folder
-                )
-            else:
-                message = "Folder doesn't appear to be a skill. Initialize a new skill? (y/N)"
-            if not ask_yes_no(message, False):
-                exit(1)
-            creator = CreateAction(
-                None, name=basename(self.folder).replace('-', ' ').replace('skill', '').strip()
-            )
-            creator.path = self.folder
-            creator.perform()
+        if not isdir(self.folder):
+            raise MskException('Skill folder at {} does not exist'.format(self.folder))
+        if not isfile(join(self.folder, '__init__.py')):
+            if not ask_yes_no("Folder doesn't appear to be a skill. Continue? (y/N)", False):
+                return
 
         makedirs(join(self.folder, 'test', 'intent'), exist_ok=True)
 
@@ -149,72 +198,14 @@ class CreateTestsAction(ConsoleAction):
         if not intent_choices:
             raise MskException('No existing intents found. Please create some first')
 
-        print('Which intent would you like to test?')
-        print('\n'.join(
-            '{}. {}'.format(i + 1, intent_choice)
-            for i, intent_choice in enumerate(intent_choices)
-        ))
-        print()
+        intent_name = ask_choice('Which intent would you like to test?', intent_choices)
 
-        test_json = {}
-
-        intent_name = intent_choices[
-            int(ask_input('>', lambda x: 0 < int(x) <= len(intent_choices))) - 1
-            ]
         if intent_name in padatious_intents:
             intent_file = padatious_intents[intent_name]
-            lines = list(read_lines(intent_file))
-            shuffle(lines)
-            print('\n=== Intent Examples ===')
-            print('\n'.join(lines[:6] + ['...'] * (len(lines) > 6)))
-            entity_names = set(re.findall(r'(?<={)[a-z_]+(?=})', '\n'.join(lines)))
-            entities = {
-                entity_name: read_lines(entity_file)
-                for entity_name in entity_names
-                for entity_file in [join(self.folder, 'vocab', 'en-us', entity_name + '.entity')]
-                if isfile(entity_file)
-            }
-            if entities:
-                print('\n=== Entities ===')
-            for entity_name, lines in entities.items():
-                sample = ', '.join(lines)
-                print('{}: {}'.format(
-                    entity_name, sample[:50] + '...' * (len(sample) > 50)
-                ))
-            print()
-            test_json['utterance'] = utterance = ask_input('Enter an example query:')
-            if entity_names and ask_yes_no('Tag intent match? (Y/n)', True):
-                utterance_data = {}
-                utterance_left = utterance
-                for entity_name in entity_names:
-                    vocab_value = ask_input(
-                        entity_name + ':', lambda x: not x or x in utterance_left,
-                        'Response must be in the remaining utterance: ' + utterance_left
-                    ).strip()
-                    if vocab_value:
-                        utterance_data[entity_name] = vocab_value
-                        utterance_left = utterance_left.replace(vocab_value, '')
-                if utterance_data:
-                    test_json['expected_data'] = utterance_data
+            test_json = self.generate_padatious_test_case(intent_name, intent_file)
         else:
             intent_vocabs = adapt_intents[intent_name]
-            vocab_defs = self.load_adapt_vocab(chain(*intent_vocabs.values()))
-            for key, name in [('require', 'Required'), ('optionally', 'Optional')]:
-                if intent_vocabs[key]:
-                    print('===', name, 'Vocab', '===')
-                for vocab_name in intent_vocabs[key]:
-                    words = vocab_defs.get(vocab_name, ['?'])
-                    print('{}: {}'.format(vocab_name, ', '.join(
-                        words[:6] + ['...'] * (len(words) > 6)
-                    )))
-                if intent_vocabs[key]:
-                    print()
-
-            utterance, utterance_data = self.ask_adapt_example(intent_vocabs)
-            if utterance_data:
-                test_json['intent'] = utterance_data
-            test_json['utterance'] = utterance
-            test_json['intent_type'] = intent_name
+            test_json = self.generate_adapt_test_case(intent_name, intent_vocabs)
 
         expected_dialog = ask_input('Expected dialog (leave empty to skip):')
         if expected_dialog:
@@ -223,5 +214,4 @@ class CreateTestsAction(ConsoleAction):
         intent_test_file = self.find_intent_test_file(intent_name)
         with open(intent_test_file, 'w') as f:
             json.dump(test_json, f, indent=4)
-
         print('Generated test file:', intent_test_file)

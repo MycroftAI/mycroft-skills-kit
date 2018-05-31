@@ -33,7 +33,7 @@ from msk.exceptions import MskException
 from msk.lazy import Lazy
 from msk.repo_action import SkillData
 from msk.util import ask_input, skills_kit_footer, \
-    create_or_edit_pr, ask_yes_no, skill_repo_name, read_file
+    create_or_edit_pr, ask_yes_no, skill_repo_name, read_file, ask_choice
 
 body_template = '''
 ## Info
@@ -107,11 +107,7 @@ class UploadAction(ConsoleAction):
         if 'description' in sections:
             description = sections['description']
         else:
-            section_list = list(sections)
-            resp = ask_input('Which section contains the description?\n{}\n>'.format(
-                '\n'.join('{}. {}'.format(i, section) for i, section in enumerate(section_list, 1))
-            ), lambda x: 0 < int(x) <= len(sections))
-            description = section_list[int(resp) - 1]
+            description = ask_choice('Which section contains the description?', list(sections))
 
         branch = SkillData(self.entry).add_to_repo()
         self.repo.push_to_fork(branch)

@@ -78,7 +78,7 @@ def skill_repo_name(url: str):
     return '{}/{}'.format(SkillEntry.extract_author(url), SkillEntry.extract_repo_name(url))
 
 
-def ask_input(message, validator=lambda x: True, on_fail='Invalid entry'):
+def ask_input(message: str, validator=lambda x: True, on_fail='Invalid entry'):
     while True:
         resp = input(message + ' ')
         try:
@@ -89,6 +89,18 @@ def ask_input(message, validator=lambda x: True, on_fail='Invalid entry'):
         o = on_fail(resp) if callable(on_fail) else on_fail
         if isinstance(o, str):
             print(o)
+
+
+def ask_choice(message: str, choices: list) -> str:
+    print(message)
+    print('\n'.join(
+        '{}. {}'.format(i + 1, choice)
+        for i, choice in enumerate(choices)
+    ))
+    print()
+
+    choice = ask_input('>', lambda x: 0 < int(x) <= len(choices))
+    return choices[int(choice) - 1]
 
 
 def ask_input_lines(message: str, bullet: str = '>') -> list:
