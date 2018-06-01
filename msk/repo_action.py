@@ -100,6 +100,12 @@ class SkillData(GlobalContext):
         existing_mods = [folder for size, typ, sha, folder in elements]
         if self.name not in existing_mods:
             self.repo.git.submodule('add', self.entry.url, self.name)
+
+        # Upgrade skill in case it is outdated
+        self.repo_git.fetch()
+        default_branch = self.repo_git.symbolic_ref('refs/remotes/origin/HEAD')
+        self.repo_git.reset(default_branch, hard=True)
+
         branch_name = 'add/' + self.name
         self.repo.checkout_branch(branch_name)
         self.repo.git.add(self.name)
