@@ -16,6 +16,8 @@ A tool to help with creating, uploading, and upgrading Mycroft skills on the
 
 ## Install
 
+*Note: Only Linux has been tested*
+
 ```bash
 pip3 install msk
 ```
