@@ -22,12 +22,14 @@
 import sys
 
 from argparse import ArgumentParser
+from msm import MycroftSkillsManager, SkillRepo
 
 from msk.actions.create import CreateAction
 from msk.actions.create_test import CreateTestAction
 from msk.actions.upgrade import UpgradeAction
 from msk.actions.upload import UploadAction
 from msk.exceptions import MskException
+from msk.global_context import GlobalContext
 
 console_actions = {
     'upgrade': UpgradeAction,
@@ -39,11 +41,24 @@ console_actions = {
 
 def main():
     parser = ArgumentParser()
+    parser.add_argument('-l', '--lang', default='en-us')
+    parser.add_argument('-u', '--repo-url', help='Url of GitHub repo to upload skills to')
+    parser.add_argument('-b', '--repo-branch', help='Branch of skills repo to upload to')
+    parser.add_argument('-s', '--skills-dir', help='Directory to look for skills in')
+    parser.add_argument('-c', '--repo-cache', help='Location to store local skills repo clone')
+
     subparsers = parser.add_subparsers(dest='action')
     subparsers.required = True
     for action, cls in console_actions.items():
         cls.register(subparsers.add_parser(action))
+
     args = parser.parse_args(sys.argv[1:])
+
+    context = GlobalContext()
+    context.lang = args.lang
+    context.msm = MycroftSkillsManager(
+        skills_dir=args.skills_dir, repo=SkillRepo(url=args.repo_url, branch=args.repo_branch)
+    )
 
     try:
         return console_actions[args.action](args).perform()

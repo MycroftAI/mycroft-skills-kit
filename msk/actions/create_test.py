@@ -32,11 +32,12 @@ from typing import Dict
 
 from msk.console_action import ConsoleAction
 from msk.exceptions import MskException
+from msk.global_context import GlobalContext
 from msk.lazy import Lazy
 from msk.util import ask_yes_no, ask_input, read_file, read_lines, ask_choice, serialized
 
 
-class TestCreator:
+class TestCreator(GlobalContext):
     def __init__(self, folder):
         self.folder = folder
 
@@ -45,7 +46,7 @@ class TestCreator:
     utterance = Lazy(lambda s: ask_input('Enter an example query:', lambda x: x))
     dialogs = Lazy(lambda s: [
         splitext(basename(i))[0]
-        for i in glob(join(s.folder, 'dialog', 'en-us', '*.dialog'))
+        for i in glob(join(s.folder, 'dialog', s.lang, '*.dialog'))
     ])
     expected_dialog = Lazy(lambda s: ask_choice(
         'Choose expected dialog (leave empty to skip).', s.dialogs, allow_empty=True
@@ -125,8 +126,8 @@ class AdaptTestCreator(TestCreator):
                 for i in read_lines(content_file)
             )))
             for content_file in
-            glob(join(self.folder, 'vocab', 'en-us', '*.voc')) +
-            glob(join(self.folder, 'regex', 'en-us', '*.rx'))
+            glob(join(self.folder, 'vocab', self.lang, '*.voc')) +
+            glob(join(self.folder, 'regex', self.lang, '*.rx'))
         }
 
     @Lazy
@@ -187,14 +188,14 @@ class AdaptTestCreator(TestCreator):
 
 
 class PadatiousTestCreator(TestCreator):
-    intent_files = Lazy(lambda s: glob(join(s.folder, 'vocab', 'en-us', '*.intent')))
+    intent_files = Lazy(lambda s: glob(join(s.folder, 'vocab', s.lang, '*.intent')))
     intent_names = Lazy(lambda s: {
         basename(intent_file): intent_file for intent_file in s.intent_files
     })
     intent_file = Lazy(lambda s: s.intent_names.get(s.intent_name, ''))
     entities = Lazy(lambda s: {
         splitext(basename(entity_file))[0]: read_lines(entity_file)
-        for entity_file in glob(join(s.folder, 'vocab', 'en-us', '*.entity'))
+        for entity_file in glob(join(s.folder, 'vocab', s.lang, '*.entity'))
     })
     intent_lines = Lazy(lambda s: read_lines(s.intent_file))
     entity_names = Lazy(lambda s: set(re.findall(r'(?<={)[a-z_]+(?=})', '\n'.join(s.intent_lines))))

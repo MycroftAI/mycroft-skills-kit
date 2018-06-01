@@ -22,6 +22,10 @@
 from functools import wraps
 
 
+def unset():
+    raise NotImplementedError
+
+
 class Lazy:
     """Lazy attribute across all instances"""
     initial_val = []
@@ -31,7 +35,10 @@ class Lazy:
         self.func = func
         self.return_val = self.initial_val
 
-    def __get__(self, inst, inst_cls):
+    def __set__(self, instance, value):
+        self.return_val = value
+
+    def __get__(self, instance, owner):
         if self.return_val is self.initial_val:
-            self.return_val = self.func(inst)
+            self.return_val = self.func(instance)
         return self.return_val

@@ -25,7 +25,6 @@ import re
 from argparse import ArgumentParser
 from git import Git
 from github import GithubException
-from github.AuthenticatedUser import AuthenticatedUser
 from github.Repository import Repository
 from os import makedirs
 from os.path import join, exists, isdir
@@ -36,7 +35,7 @@ from typing import Callable, Optional
 from msk.console_action import ConsoleAction
 from msk.exceptions import GithubRepoExists
 from msk.lazy import Lazy
-from msk.util import ask_input, to_camel, ask_yes_no, ask_for_github_credentials, ask_input_lines, \
+from msk.util import ask_input, to_camel, ask_yes_no, ask_input_lines, \
     print_error
 
 readme_template = '''## {title_name}
@@ -122,11 +121,9 @@ settingsmeta_template = '''{{
 
 
 class CreateAction(ConsoleAction):
-    def __init__(self, args, name: str = None, lang: str = None):
+    def __init__(self, args, name: str = None):
         if name:
             self.name = name
-        if lang:
-            self.lang = lang
 
     @staticmethod
     def register(parser: ArgumentParser):
@@ -161,10 +158,6 @@ class CreateAction(ConsoleAction):
 
     path = Lazy(lambda s: join(s.msm.skills_dir, s.name + '-skill'))
     git = Lazy(lambda s: Git(s.path))
-    lang = Lazy(lambda s: ask_input(
-        'Locale (default = en-us):', lambda x: re.match(r'^([a-z]{2}-[a-z]{2}|)$', x),
-        'Please leave empty or write locale in format of xx-xx'
-    ).lower() or 'en-us')
     short_description = Lazy(lambda s: ask_input(
         'Enter a one line description for your skill (ie. Orders fresh pizzas from the store):',
     ).capitalize())
@@ -240,10 +233,9 @@ class CreateAction(ConsoleAction):
     def create_github_repo(self, get_repo_name: Callable = None) -> Optional[Repository]:
         if 'origin' not in Git(self.path).remote().split('\n'):
             if ask_yes_no('Would you like to create a GitHub repo for it? (Y/n)', True):
-                user = ask_for_github_credentials().get_user()  # type: AuthenticatedUser
                 repo_name = (get_repo_name and get_repo_name()) or (self.name + '-skill')
                 try:
-                    repo = user.create_repo(repo_name, self.short_description)
+                    repo = self.user.create_repo(repo_name, self.short_description)
                 except GithubException as e:
                     if e.status == 422:
                         raise GithubRepoExists(repo_name) from e
