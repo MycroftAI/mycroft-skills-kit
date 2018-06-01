@@ -196,7 +196,7 @@ class PadatiousTestCreator(TestCreator):
         splitext(basename(entity_file))[0]: read_lines(entity_file)
         for entity_file in glob(join(s.folder, 'vocab', 'en-us', '*.entity'))
     })
-    intent_lines = Lazy(lambda s: list(read_lines(s.intent_file)))
+    intent_lines = Lazy(lambda s: read_lines(s.intent_file))
     entity_names = Lazy(lambda s: set(re.findall(r'(?<={)[a-z_]+(?=})', '\n'.join(s.intent_lines))))
 
     @Lazy

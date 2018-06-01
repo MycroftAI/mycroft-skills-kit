@@ -179,7 +179,7 @@ def read_file(*path):
 
 def read_lines(*path):
     with open(join(*path)) as f:
-        return (i for i in (i.strip() for i in f.readlines()) if i)
+        return [i for i in (i.strip() for i in f.readlines()) if i]
 
 
 def serialized(func):
