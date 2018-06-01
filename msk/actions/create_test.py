@@ -243,8 +243,9 @@ class PadatiousTestCreator(TestCreator):
         print()
         print(self.intent_str)
         print()
-        print(self.entities_str)
-        print()
+        if self.entities_str:
+            print(self.entities_str)
+            print()
 
         test_case = {'utterance': self.utterance}
         if self.entity_names and self.utterance_data:
