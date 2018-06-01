@@ -249,7 +249,7 @@ class PadatiousTestCreator(TestCreator):
 
         test_case = {'utterance': self.utterance}
         if self.entity_names and self.utterance_data:
-            test_case['expected_data'] = self.utterance_data
+            test_case['intent'] = self.utterance_data
         test_case['intent_type'] = self.intent_name.replace('.intent', '')
         if self.expected_dialog:
             test_case['expected_dialog'] = self.expected_dialog
