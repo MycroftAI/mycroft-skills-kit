@@ -144,7 +144,7 @@ class AdaptTestCreator(TestCreator):
 
             print()
             print('===', start_message, 'Tags', '===')
-            for vocab_name in self.intent_recipe[key]:
+            for vocab_name in sorted(self.intent_recipe[key]):
                 vocab_value = ask_input(
                     vocab_name + ':', lambda x: not x or x.lower() in utterance_left,
                     'Response must be in the remaining utterance: ' + utterance_left
@@ -164,7 +164,7 @@ class AdaptTestCreator(TestCreator):
 
             yield ''
             yield '===', name, 'Vocab', '==='
-            for vocab_name in self.intent_recipe[key]:
+            for vocab_name in sorted(self.intent_recipe[key]):
                 words = self.vocab_defs.get(vocab_name, ['?'])
                 yield '{}: {}'.format(vocab_name, ', '.join(
                     words[:6] + ['...'] * (len(words) > 6)
@@ -206,7 +206,7 @@ class PadatiousTestCreator(TestCreator):
         if not self.entities:
             return
         yield '=== Entity Examples ==='
-        for entity_name, lines in self.entities.items():
+        for entity_name, lines in sorted(self.entities.items()):
             sample = ', '.join(lines)
             yield '{}: {}'.format(
                 entity_name, sample[:50] + '...' * (len(sample) > 50)
@@ -226,7 +226,7 @@ class PadatiousTestCreator(TestCreator):
 
         print()
         print('=== Entity Tags ===')
-        for entity_name in self.entity_names:
+        for entity_name in sorted(self.entity_names):
             entity_value = ask_input(
                 entity_name + ':', lambda x: not x or x in utterance_left,
                 'Response must be in the remaining utterance: ' + utterance_left
