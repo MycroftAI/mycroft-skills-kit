@@ -289,5 +289,5 @@ class CreateTestAction(ConsoleAction):
 
         intent_test_file = self.find_intent_test_file(creator.intent_name)
         with open(intent_test_file, 'w') as f:
-            json.dump(test_case, f, indent=4)
+            json.dump(test_case, f, indent=4, sort_keys=True)
         print('Generated test file:', intent_test_file)
