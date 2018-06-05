@@ -104,7 +104,7 @@ def ask_choice(message: str, choices: list, allow_empty=False) -> Optional[str]:
 
     def find_match(x):
         if not x and allow_empty:
-            return None
+            return ...
         try:
             return choices[int(x) - 1]
         except (ValueError, IndexError):
@@ -118,9 +118,10 @@ def ask_choice(message: str, choices: list, allow_empty=False) -> Optional[str]:
             return best_choice
         raise ValueError
 
-    return find_match(ask_input(
+    resp = find_match(ask_input(
         '>', find_match, 'Please enter one of the options.'
     ))
+    return None if resp is ... else resp
 
 
 def ask_input_lines(message: str, bullet: str = '>') -> list:
