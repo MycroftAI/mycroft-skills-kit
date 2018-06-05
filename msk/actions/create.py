@@ -65,7 +65,7 @@ class {class_name}(MycroftSkill):
 
     @intent_file_handler('{intent_name}.intent')
     def handle_{handler_name}(self, message):
-        self.speak_dialog('{intent_name}')
+{handler_code}
 
 
 def create_skill():
@@ -162,16 +162,22 @@ class CreateAction(ConsoleAction):
         'Enter a one line description for your skill (ie. Orders fresh pizzas from the store):',
     ).capitalize())
     author = Lazy(lambda s: ask_input('Enter author:'))
-    examples = Lazy(lambda s: [
-        i.capitalize().rstrip('.') for i in ask_input_lines(
+    intent_lines = Lazy(lambda s: [
+        i.capitalize() for i in ask_input_lines(
             'Enter some example phrases to trigger your skill:', '-'
         )
     ])
     dialog_lines = Lazy(lambda s: [
-        i.capitalize().rstrip('.') for i in ask_input_lines(
+        i.capitalize() for i in ask_input_lines(
             'Enter what your skill should say to respond:', '-'
         )
     ])
+    intent_entities = Lazy(lambda s: set(re.findall(
+        r'(?<={)[a-z_A-Z]*(?=})', '\n'.join(i for i in s.intent_lines)
+    )))
+    dialog_entities = Lazy(lambda s: set(re.findall(
+        r'(?<={)[a-z_A-Z]*(?=})', '\n'.join(s.dialog_lines)
+    )))
     long_description = Lazy(lambda s: '\n\n'.join(
         ask_input_lines('Enter a long description:', '>')
     ).strip().capitalize())
@@ -179,12 +185,29 @@ class CreateAction(ConsoleAction):
         title_name=s.name.replace('-', ' ').title(),
         short_description=s.short_description,
         long_description=s.long_description,
-        examples=''.join(' - "{}"\n'.format(i) for i in s.examples),
+        examples=''.join(' - "{}"\n'.format(i) for i in s.intent_lines),
         credits=credits_template.format(author=s.author)
     ))
     init_file = Lazy(lambda s: init_template.format(
         class_name=to_camel(s.name.replace('-', '_')),
         handler_name=s.intent_name.replace('.', '_'),
+        handler_code='\n'.join(
+            ' ' * 8 * bool(i) + i
+            for i in [
+                "{ent} = message.data['{ent}']".format(ent=entity)
+                for entity in sorted(s.intent_entities)
+            ] + [
+                "{ent} = ''".format(ent=entity)
+                for entity in sorted(s.dialog_entities - s.intent_entities)
+            ] + [''] * bool(
+                s.dialog_entities | s.intent_entities
+            ) + "self.speak_dialog('{intent}'{args})".format(
+                intent=s.intent_name, args=", data={{\n{}\n}}".format(',\n'.join(
+                    "    '{ent}': {ent}".format(ent=entity)
+                    for entity in s.dialog_entities | s.intent_entities
+                )) * bool(s.dialog_entities | s.intent_entities)
+            ).split('\n')
+        ),
         intent_name=s.intent_name
     ))
     intent_name = Lazy(lambda s: '.'.join(reversed(s.name.split('-'))))
@@ -192,7 +215,7 @@ class CreateAction(ConsoleAction):
     def add_vocab(self):
         makedirs(join(self.path, 'vocab', self.lang))
         with open(join(self.path, 'vocab', self.lang, self.intent_name + '.intent'), 'w') as f:
-            f.write('\n'.join(self.examples + ['']))
+            f.write('\n'.join(self.intent_lines + ['']))
 
     def add_dialog(self):
         makedirs(join(self.path, 'dialog', self.lang))
@@ -204,10 +227,10 @@ class CreateAction(ConsoleAction):
 
         skill_template = [
             ('', lambda: makedirs(self.path)),
-            ('__init__.py', lambda: self.init_file),
-            ('README.md', lambda: self.readme),
             ('vocab', self.add_vocab),
             ('dialog', self.add_dialog),
+            ('__init__.py', lambda: self.init_file),
+            ('README.md', lambda: self.readme),
             ('.gitignore', lambda: gitignore_template),
             ('settingsmeta.json', lambda: settingsmeta_template.format(
                 capital_desc=self.name.replace('-', ' ').capitalize()
