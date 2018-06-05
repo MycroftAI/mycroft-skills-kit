@@ -187,7 +187,7 @@ class CreateAction(ConsoleAction):
     def add_vocab(self):
         makedirs(join(self.path, 'vocab', self.lang))
         with open(join(self.path, 'vocab', self.lang, self.intent_name + '.intent'), 'w') as f:
-            f.write(self.intent_name.replace('.', ' ').capitalize() + '\n\n')
+            f.write('\n'.join(self.examples + ['']))
 
     def add_dialog(self):
         makedirs(join(self.path, 'dialog', self.lang))
