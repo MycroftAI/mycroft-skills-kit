@@ -167,6 +167,11 @@ class CreateAction(ConsoleAction):
             'Enter some example phrases to trigger your skill:', '-'
         )
     ])
+    dialog_lines = Lazy(lambda s: [
+        i.capitalize().rstrip('.') for i in ask_input_lines(
+            'Enter what your skill should say to respond:', '-'
+        )
+    ])
     long_description = Lazy(lambda s: '\n\n'.join(
         ask_input_lines('Enter a long description:', '>')
     ).strip().capitalize())
@@ -192,7 +197,7 @@ class CreateAction(ConsoleAction):
     def add_dialog(self):
         makedirs(join(self.path, 'dialog', self.lang))
         with open(join(self.path, 'dialog', self.lang, self.intent_name + '.dialog'), 'w') as f:
-            f.write(self.name.replace('-', ' ').capitalize() + '\n\n')
+            f.write('\n'.join(self.dialog_lines + ['']))
 
     def initialize_template(self, files: set = None):
         git = Git(self.path)
