@@ -19,4 +19,4 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-__version__ = '0.3.5'  # Also update in setup.py
+__version__ = '0.3.6'  # Also update in setup.py
