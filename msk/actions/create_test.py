@@ -96,7 +96,7 @@ class AdaptTestCreator(TestCreator):
 
             missing_vocabs = [
                 i for i in self.intent_recipe['require']
-                if not any(j in utterance for j in self.vocab_defs.get(i, []))
+                if not any(j in utterance.lower() for j in self.vocab_defs.get(i, []))
             ]
             if missing_vocabs:
                 print('Missing the following vocab:', ', '.join(missing_vocabs))
@@ -122,7 +122,7 @@ class AdaptTestCreator(TestCreator):
     def vocab_defs(self):
         return {
             splitext(basename(content_file))[0]: list(chain(*(
-                map(str.strip, i.split('|'))
+                map(str.strip, i.lower().split('|'))
                 for i in read_lines(content_file)
             )))
             for content_file in
