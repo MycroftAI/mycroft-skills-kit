@@ -93,7 +93,14 @@ def ask_input(message: str, validator=lambda x: True, on_fail='Invalid entry'):
             print(o)
 
 
-def ask_choice(message: str, choices: list, allow_empty=False, error=None) -> Optional[str]:
+def ask_choice(message: str, choices: list, allow_empty=False, on_empty=None) -> Optional[str]:
+    if not choices:
+        if allow_empty:
+            print(on_empty)
+            return None
+        else:
+            raise MskException(on_empty or 'Error with "{}"'.format(message))
+
     print()
     print(message)
     print('\n'.join(
@@ -101,12 +108,6 @@ def ask_choice(message: str, choices: list, allow_empty=False, error=None) -> Op
         for i, choice in enumerate(choices)
     ))
     print()
-
-    if not choices:
-        if allow_empty:
-            return None
-        else:
-            raise MskException(error or 'Error with "{}"'.format(message))
 
     def find_match(x):
         if not x and allow_empty:

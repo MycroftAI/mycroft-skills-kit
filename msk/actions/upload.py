@@ -109,7 +109,7 @@ class UploadAction(ConsoleAction):
         else:
             description = ask_choice(
                 'Which section contains the description?', list(sections),
-                error='Please create a description section in the README'
+                on_empty='Please create a description section in the README'
             )
 
         branch = SkillData(self.entry).add_to_repo()

@@ -49,7 +49,8 @@ class TestCreator(GlobalContext):
         for i in glob(join(s.folder, 'dialog', s.lang, '*.dialog'))
     ])
     expected_dialog = Lazy(lambda s: ask_choice(
-        'Choose expected dialog (leave empty to skip).', s.dialogs, allow_empty=True
+        'Choose expected dialog (leave empty to skip).', s.dialogs, allow_empty=True,
+        on_empty='No dialogs available. Skipping...'
     ))
 
     padatious_creator = Lazy(lambda s: PadatiousTestCreator(s.folder))  # type: PadatiousTestCreator
@@ -63,7 +64,7 @@ class TestCreator(GlobalContext):
     def intent_name(self):
         return ask_choice(
             'Which intent would you like to test?', self.intent_choices,
-            error='No existing intents found. Please create some first'
+            on_empty='No existing intents found. Please create some first'
         )
 
 
