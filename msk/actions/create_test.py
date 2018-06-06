@@ -61,10 +61,9 @@ class TestCreator(GlobalContext):
 
     @Lazy
     def intent_name(self):
-        if not self.intent_choices:
-            raise MskException('No existing intents found. Please create some first')
         return ask_choice(
-            'Which intent would you like to test?', self.intent_choices
+            'Which intent would you like to test?', self.intent_choices,
+            error='No existing intents found. Please create some first'
         )
 
 

@@ -107,7 +107,10 @@ class UploadAction(ConsoleAction):
         if 'description' in sections:
             description = sections['description']
         else:
-            description = ask_choice('Which section contains the description?', list(sections))
+            description = ask_choice(
+                'Which section contains the description?', list(sections),
+                error='Please create a description section in the README'
+            )
 
         branch = SkillData(self.entry).add_to_repo()
         self.repo.push_to_fork(branch)

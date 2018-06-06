@@ -35,7 +35,7 @@ from tempfile import mkstemp
 from typing import Optional
 
 from msk import __version__
-from msk.exceptions import PRModified
+from msk.exceptions import PRModified, MskException
 
 ASKPASS = '''#!/usr/bin/env python3
 import sys
@@ -93,7 +93,7 @@ def ask_input(message: str, validator=lambda x: True, on_fail='Invalid entry'):
             print(o)
 
 
-def ask_choice(message: str, choices: list, allow_empty=False) -> Optional[str]:
+def ask_choice(message: str, choices: list, allow_empty=False, error=None) -> Optional[str]:
     print()
     print(message)
     print('\n'.join(
@@ -101,6 +101,12 @@ def ask_choice(message: str, choices: list, allow_empty=False) -> Optional[str]:
         for i, choice in enumerate(choices)
     ))
     print()
+
+    if not choices:
+        if allow_empty:
+            return None
+        else:
+            raise MskException(error or 'Error with "{}"'.format(message))
 
     def find_match(x):
         if not x and allow_empty:
