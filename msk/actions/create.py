@@ -194,7 +194,7 @@ class CreateAction(ConsoleAction):
         handler_code='\n'.join(
             ' ' * 8 * bool(i) + i
             for i in [
-                "{ent} = message.data['{ent}']".format(ent=entity)
+                "{ent} = message.data.get('{ent}')".format(ent=entity)
                 for entity in sorted(s.intent_entities)
             ] + [
                 "{ent} = ''".format(ent=entity)
