@@ -55,8 +55,7 @@ credits_template = '''## Credits
 
 '''
 
-init_template = '''from adapt.intent import IntentBuilder
-from mycroft import MycroftSkill, intent_file_handler
+init_template = '''from mycroft import MycroftSkill, intent_file_handler
 
 
 class {class_name}(MycroftSkill):
