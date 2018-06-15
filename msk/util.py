@@ -56,7 +56,7 @@ def register_git_injector(username, password):
     atexit.register(lambda: os.remove(tmp_path))
 
     with os.fdopen(fd, 'w') as f:
-        f.write(ASKPASS.format(username=username, password=password))
+        f.write(ASKPASS.format(username=username, password=password or ''))
 
     chmod(tmp_path, 0o700)
     os.environ['GIT_ASKPASS'] = tmp_path
@@ -74,8 +74,7 @@ def ask_for_github_credentials(use_token=False) -> Github:
         github = Github(username, password)
         try:
             _ = github.get_user().login
-            if password:
-                register_git_injector(username, password)
+            register_git_injector(username, password)
             return github
         except GithubException:
             print('Login incorrect. Retry:')
