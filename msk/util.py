@@ -62,15 +62,20 @@ def register_git_injector(username, password):
     os.environ['GIT_ASKPASS'] = tmp_path
 
 
-def ask_for_github_credentials() -> Github:
+def ask_for_github_credentials(use_token=False) -> Github:
     print('=== GitHub Credentials ===')
     while True:
-        username = input('Username: ')
-        password = getpass('Password: ')
+        if use_token:
+            username = getpass('Token: ')
+            password = None
+        else:
+            username = input('Username: ')
+            password = getpass('Password: ')
         github = Github(username, password)
         try:
             _ = github.get_user().login
-            register_git_injector(username, password)
+            if password:
+                register_git_injector(username, password)
             return github
         except GithubException:
             print('Login incorrect. Retry:')
