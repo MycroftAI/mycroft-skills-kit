@@ -81,7 +81,7 @@ class SkillData(GlobalContext):
         default_branch = self.repo_git.symbolic_ref('refs/remotes/origin/HEAD')
         self.repo_git.reset(default_branch, hard=True)
 
-        upgrade_branch = 'upgrade/' + self.name
+        upgrade_branch = 'upgrade-' + self.name
         self.repo.checkout_branch(upgrade_branch)
 
         if not self.repo.git.diff(skill_module) and self.repo.git.ls_files(skill_module):
@@ -106,7 +106,7 @@ class SkillData(GlobalContext):
         default_branch = self.repo_git.symbolic_ref('refs/remotes/origin/HEAD')
         self.repo_git.reset(default_branch, hard=True)
 
-        branch_name = 'add/' + self.name
+        branch_name = 'add-' + self.name
         self.repo.checkout_branch(branch_name)
         self.repo.git.add(self.name)
         self.repo.git.commit(message='Add ' + self.name)
