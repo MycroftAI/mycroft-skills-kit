@@ -50,4 +50,13 @@ msk upgrade /opt/mycroft/skills/myskill
 
 ## Upgrading an Existing Skill
 
-`msk upgrade /opt/mycroft/skills/myskill`
+```bash
+msk upgrade /opt/mycroft/skills/myskill
+```
+
+ --or--
+
+```bash
+cd /opt/mycroft/skills/myskill
+msk upgrade .
+```
