@@ -149,8 +149,8 @@ def ask_yes_no(message: str, default: Optional[bool]) -> bool:
 
 
 def create_or_edit_pr(title: str, body: str, skills_repo: Repository,
-                      user, branch: str):
-    base = skills_repo.default_branch
+                      user, branch: str, repo_branch: str):
+    base = repo_branch
     head = '{}:{}'.format(user.login, branch)
     pulls = list(skills_repo.get_pulls(base=base, head=head))
     if pulls:

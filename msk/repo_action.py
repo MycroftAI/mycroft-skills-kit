@@ -62,6 +62,7 @@ class SkillData(GlobalContext):
     name = property(lambda self: self.entry.name)
     repo = Lazy(lambda s: RepoData())  # type: RepoData
     repo_git = Lazy(lambda s: Git(join(s.repo.msminfo.path, s.submodule_name)))  # type: Git
+    repo_branch = Lazy(lambda s: s.repo_git.symbolic_ref('refs/remotes/origin/HEAD'))
     git = Lazy(lambda s: Git(s.entry.path))  # type: Git
     hub = Lazy(lambda s: s.github.get_repo(skill_repo_name(s.entry.url)))  # type: Repository
 
@@ -78,8 +79,7 @@ class SkillData(GlobalContext):
         skill_module = self.submodule_name
         self.repo.msminfo.update()
         self.repo_git.fetch()
-        default_branch = self.repo_git.symbolic_ref('refs/remotes/origin/HEAD')
-        self.repo_git.reset(default_branch, hard=True)
+        self.repo_git.reset(self.repo_branch, hard=True)
 
         upgrade_branch = 'upgrade-' + self.name
         self.repo.checkout_branch(upgrade_branch)
@@ -103,8 +103,7 @@ class SkillData(GlobalContext):
 
         # Upgrade skill in case it is outdated
         self.repo_git.fetch()
-        default_branch = self.repo_git.symbolic_ref('refs/remotes/origin/HEAD')
-        self.repo_git.reset(default_branch, hard=True)
+        self.repo_git.reset(self.repo_branch, hard=True)
 
         branch_name = 'add-' + self.name
         self.repo.checkout_branch(branch_name)
