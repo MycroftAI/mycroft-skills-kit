@@ -118,7 +118,8 @@ class UploadAction(ConsoleAction):
         pull = create_or_edit_pr(
             title='Add {}'.format(self.entry.name), body=body_template.format(
                 description=description, skill_name=self.entry.name, skill_url=skill_repo.html_url
-            ), user=self.user, branch=branch, skills_repo=self.repo.hub
+            ), user=self.user, branch=branch, skills_repo=self.repo.hub,
+            repo_branch=self.branch
         )
 
         print('Created pull request: ', pull.html_url)

@@ -82,5 +82,5 @@ class UpgradeAction(ConsoleAction):
         print('===', title, '===')
         print(body)
         print()
-        pull = create_or_edit_pr(title, body, self.repo.hub, self.user, upgrade_branch)
+        pull = create_or_edit_pr(title, body, self.repo.hub, self.user, upgrade_branch, self.branch)
         print('Created PR at:', pull.html_url)

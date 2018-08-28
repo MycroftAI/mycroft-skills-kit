@@ -61,6 +61,7 @@ def main():
         skills_dir=args.skills_dir, repo=SkillRepo(url=args.repo_url, branch=args.repo_branch)
     )
     context.use_token = args.use_token
+    context.branch = context.msm.repo.branch
 
     try:
         return console_actions[args.action](args).perform()
