@@ -188,7 +188,7 @@ class AdaptTestCreator(TestCreator):
 
 
 class PadatiousTestCreator(TestCreator):
-    intent_files = Lazy(lambda s: glob(join(s.folder, 'vocab', s.lang, '*.intent') + glob(join(s.folder, 'locale', s.lang, '*.intent'))))
+    intent_files = Lazy(lambda s: glob(join(s.folder, 'vocab', s.lang, '*.intent')) + glob(join(s.folder, 'locale', s.lang, '*.intent')))
     intent_names = Lazy(lambda s: {
         basename(intent_file): intent_file for intent_file in s.intent_files
     })
