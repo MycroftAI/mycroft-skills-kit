@@ -126,8 +126,8 @@ class AdaptTestCreator(TestCreator):
                 for i in read_lines(content_file)
             )))
             for content_file in
-            glob(join(self.folder, 'vocab', self.lang, '*.voc')) +
-            glob(join(self.folder, 'regex', self.lang, '*.rx'))
+            glob(join(self.folder, 'vocab', self.lang, '*.voc')) + glob(join(self.folder, 'locale', self.lang, '*.voc')) +
+            glob(join(self.folder, 'regex', self.lang, '*.rx')) + glob(join(self.folder, 'locale', self.lang, '*.rx'))
         }
 
     @Lazy
@@ -188,15 +188,16 @@ class AdaptTestCreator(TestCreator):
 
 
 class PadatiousTestCreator(TestCreator):
-    intent_files = Lazy(lambda s: glob(join(s.folder, 'vocab', s.lang, '*.intent')))
+    intent_files = Lazy(lambda s: glob(join(s.folder, 'vocab', s.lang, '*.intent')) + glob(join(s.folder, 'locale', s.lang, '*.intent')))
     intent_names = Lazy(lambda s: {
         basename(intent_file): intent_file for intent_file in s.intent_files
     })
     intent_file = Lazy(lambda s: s.intent_names.get(s.intent_name, ''))
     entities = Lazy(lambda s: {
         splitext(basename(entity_file))[0]: read_lines(entity_file)
-        for entity_file in glob(join(s.folder, 'vocab', s.lang, '*.entity'))
+        for entity_file in glob(join(s.folder, 'vocab', s.lang, '*.entity')) + glob(join(s.folder, 'locale', s.lang, '*.entity'))
     })
+
     intent_lines = Lazy(lambda s: read_lines(s.intent_file))
     entity_names = Lazy(lambda s: set(re.findall(r'(?<={)[a-z_]+(?=})', '\n'.join(s.intent_lines))))
 
