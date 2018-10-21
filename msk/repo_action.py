@@ -96,8 +96,8 @@ class SkillData(GlobalContext):
 
     def add_to_repo(self) -> str:
         self.repo.msminfo.update()
-        elements = [i.split() for i in self.git.ls_tree('HEAD').split('\n')]
-        existing_mods = [folder for size, typ, sha, folder in elements]
+        existing_mods = [i.split('\t')[1]
+                         for i in self.git.ls_tree('HEAD').split('\n')]
         if self.name not in existing_mods:
             self.repo.git.submodule('add', self.entry.url, self.name)
 
