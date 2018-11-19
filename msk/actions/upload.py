@@ -61,9 +61,10 @@ class UploadAction(ConsoleAction):
 
     @staticmethod
     def register(parser: ArgumentParser):
-        parser.add_argument('skill_folder')
+        pass  # Implemented in SubmitAction
 
     def perform(self):
+        print('Uploading a new skill to the skill repo...')
         for i in listdir(self.entry.path):
             if i.lower() == 'readme.md' and i != 'README.md':
                 shutil.move(join(self.entry.path, i), join(self.entry.path, 'README.md'))

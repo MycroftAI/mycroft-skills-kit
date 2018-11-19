@@ -50,10 +50,11 @@ class UpgradeAction(ConsoleAction):
             raise NotUploaded('Skill at folder not uploaded to store: {}'.format(args.skill_folder))
 
         self.skill = SkillData(skill_matches[0])
+        self.skill.init_existing()  # Verifies the skill exists
 
     @staticmethod
     def register(parser: ArgumentParser):
-        parser.add_argument('skill_folder')
+        pass  # Implemented in SubmitAction
 
     def create_pr_message(self, skill_git: Git, skill_repo: Repository) -> tuple:
         """Reads git commits from skill repo to create a list of changes as the PR content"""
@@ -73,7 +74,7 @@ class UpgradeAction(ConsoleAction):
         return title, body
 
     def perform(self):
-        self.skill.init_existing()
+        print('Upgrading an existing skill in the skill repo...')
         upgrade_branch = self.skill.upgrade()
         self.repo.push_to_fork(upgrade_branch)
 
