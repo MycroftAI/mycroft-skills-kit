@@ -26,16 +26,14 @@ from msm import MycroftSkillsManager, SkillRepo
 
 from msk.actions.create import CreateAction
 from msk.actions.create_test import CreateTestAction
-from msk.actions.upgrade import UpgradeAction
-from msk.actions.upload import UploadAction
+from msk.actions.submit import SubmitAction
 from msk.exceptions import MskException
 from msk.global_context import GlobalContext
 
-console_actions = {
-    'upgrade': UpgradeAction,
-    'upload': UploadAction,
-    'create': CreateAction,
-    'create-test': CreateTestAction
+action_names = {
+    SubmitAction: ['submit', 'update', 'upgrade', 'upload'],
+    CreateAction: ['create'],
+    CreateTestAction: ['create-test']
 }
 
 
@@ -50,8 +48,10 @@ def main():
 
     subparsers = parser.add_subparsers(dest='action')
     subparsers.required = True
-    for action, cls in console_actions.items():
-        cls.register(subparsers.add_parser(action))
+    action_to_cls = {}
+    for cls, names in action_names.items():
+        cls.register(subparsers.add_parser(names[0], aliases=names[1:]))
+        action_to_cls.update({name: cls for name in names})
 
     args = parser.parse_args(sys.argv[1:])
 
@@ -64,7 +64,7 @@ def main():
     context.branch = context.msm.repo.branch
 
     try:
-        return console_actions[args.action](args).perform()
+        return action_to_cls[args.action](args).perform()
     except MskException as e:
         print('{}: {}'.format(e.__class__.__name__, str(e)))
     except (KeyboardInterrupt, EOFError):
