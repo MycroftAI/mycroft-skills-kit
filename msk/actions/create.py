@@ -23,7 +23,7 @@ import atexit
 
 import re
 from argparse import ArgumentParser
-from git import Git
+from git import Git, GitCommandError
 from github import GithubException
 from github.Repository import Repository
 from os import makedirs
@@ -33,7 +33,7 @@ from subprocess import call
 from typing import Callable, Optional
 
 from msk.console_action import ConsoleAction
-from msk.exceptions import GithubRepoExists
+from msk.exceptions import GithubRepoExists, UnrelatedGithubHistory
 from msk.lazy import Lazy
 from msk.util import ask_input, to_camel, ask_yes_no, ask_input_lines, \
     print_error
@@ -256,6 +256,41 @@ class CreateAction(ConsoleAction):
         if self.git.rev_parse('HEAD', with_exceptions=False) == 'HEAD':
             self.git.add('.')
             self.git.commit(message='Initial commit')
+
+    def force_push(self, get_repo_name: Callable = None) -> Optional[Repository]:
+        if ask_yes_no(
+                'Are you sure you want to overwrite the remote github repo? '
+                'This cannot be undone and you will lose your commit '
+                'history! (Y/n)',
+                False):
+            repo_name = (get_repo_name and get_repo_name()) or (
+                    self.name + '-skill')
+            repo = self.user.get_repo(repo_name)
+            call(['git', 'push', '-f', 'origin', 'master'],
+                 cwd=self.git.working_dir)
+            print('Force pushed to GitHub repo:', repo.html_url)
+            return repo
+
+    def link_github_repo(self, get_repo_name: Callable = None) -> Optional[Repository]:
+        if 'origin' not in Git(self.path).remote().split('\n'):
+            if ask_yes_no(
+                    'Would you like to link an existing GitHub repo to it? (Y/n)',
+                    True):
+                repo_name = (get_repo_name and get_repo_name()) or (
+                        self.name + '-skill')
+                repo = self.user.get_repo(repo_name)
+                self.git.remote('add', 'origin', repo.html_url)
+                self.git.fetch()
+                try:
+                    self.git.pull('origin', 'master')
+                except GitCommandError as e:
+                    if e.status == 128:
+                        raise UnrelatedGithubHistory(repo_name) from e
+                    raise
+                call(['git', 'push', '-u', 'origin', 'master'],
+                     cwd=self.git.working_dir)
+                print('Linked and pushed to GitHub repo:', repo.html_url)
+                return repo
 
     def create_github_repo(self, get_repo_name: Callable = None) -> Optional[Repository]:
         if 'origin' not in Git(self.path).remote().split('\n'):
