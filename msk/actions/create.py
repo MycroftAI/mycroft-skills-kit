@@ -261,7 +261,7 @@ class CreateAction(ConsoleAction):
         if ask_yes_no(
                 'Are you sure you want to overwrite the remote github repo? '
                 'This cannot be undone and you will lose your commit '
-                'history! (Y/n)',
+                'history! (y/N)',
                 False):
             repo_name = (get_repo_name and get_repo_name()) or (
                     self.name + '-skill')

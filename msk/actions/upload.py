@@ -29,7 +29,7 @@ from os.path import join, abspath, expanduser, basename
 
 from msk.actions.create import CreateAction
 from msk.console_action import ConsoleAction
-from msk.exceptions import MskException, NotGitRepositoryException, \
+from msk.exceptions import MskException, NoGitRepository, \
     UnrelatedGithubHistory, GithubRepoExists
 from msk.lazy import Lazy
 from msk.repo_action import SkillData
@@ -93,7 +93,7 @@ class UploadAction(ConsoleAction):
             self.entry.author = self.user.login
         else:
             if not self.entry.url:
-                raise NotGitRepositoryException
+                raise NoGitRepository
             skill_repo = self.github.get_repo(skill_repo_name(self.entry.url))
 
         if not skill_repo.permissions.push:
