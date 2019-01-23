@@ -171,7 +171,7 @@ class TranslateAction(ConsoleAction):
                     original_tags = []
                     translated_tags = []
                     for line in lines:
-                        translated_dialog.append('# ' + line)
+                        translated_dialog.append('# ' + line.strip('\n') + '\n')
                         original_tags += re.findall('\{\{[^}]*\}\}', line)
                         translated = self.translate(line)+" \n"
                         translated_dialog.append(translated)
@@ -220,7 +220,7 @@ class TranslateAction(ConsoleAction):
                 with open(join(en_vocab, vocab_file), "r") as f:
                     lines = f.readlines()
                     for line in lines:
-                        translated_voc.append('# ' + line)
+                        translated_voc.append('# ' + line.strip('\n') + '\n')
                         translated_voc.append(self.translate(line)+" \n")
                 with open(join(lang_folder, vocab_file), "w") as f:
                     f.writelines(translated_voc)
@@ -235,7 +235,7 @@ class TranslateAction(ConsoleAction):
                 with open(join(en_vocab, vocab_file), "r") as f:
                     lines = f.readlines()
                     for line in lines:
-                        translated_voc.append('# ' + line)
+                        translated_voc.append('# ' + line.strip('\n') + '\n')
                         translated_voc.append(self.translate(line) + " \n")
                 with open(join(lang_folder, vocab_file), "w") as f:
                     f.writelines(translated_voc)
@@ -251,7 +251,7 @@ class TranslateAction(ConsoleAction):
                 with open(join(en_vocab, vocab_file), "r") as f:
                     lines = f.readlines()
                     for line in lines:
-                        translated_voc.append('# ' + line)
+                        translated_voc.append('# ' + line.strip('\n') + '\n')
                         translated_voc.append(self.translate(line) + " \n")
                 with open(join(lang_folder, vocab_file), "w") as f:
                     f.writelines(translated_voc)
@@ -279,7 +279,7 @@ class TranslateAction(ConsoleAction):
                 with open(join(en_regex, regex_file), "r") as f:
                     lines = f.readlines()
                     for line in lines:
-                        translated_regex.append('# ' + line)
+                        translated_regex.append('# ' + line.strip('\n') + '\n')
                         translated_regex.append(self.translate(line) +" \n")
                 # restore regex vars
                 original_tags = []
@@ -295,11 +295,9 @@ class TranslateAction(ConsoleAction):
                         # fix spaces
                         for p in parenthesis:
                             if p in line:
-                                line = line.replace(p, p.replace(" ",
-                                                                    ""))
+                                line = line.replace(p, p.replace(" ", ""))
                         # restore var names
-                        fixed = line.replace(translated_tags[idx],
-                                                original_tags[idx])
+                        fixed = line.replace(translated_tags[idx], original_tags[idx])
 
                         translated_regex[idr] = fixed
 
