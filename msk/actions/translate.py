@@ -115,11 +115,10 @@ class TranslateAction(ConsoleAction):
         if not isfile(join(self.folder, '__init__.py')):
             if not ask_yes_no("Folder doesn't appear to be a skill. Continue? (y/N)", False):
                 return
-        print('Translateing skill to ' + self.lang)
+        print('Translating skill to ' + self.lang)
         self.translate_dialog(self.lang)
         self.translate_vocab(self.lang)
         self.translate_regex(self.lang)
-        print('Translateing finish. ' + self.lang)
 
     def validate_language(self, lang=None):
         ''' ensure language is supported by google translate '''
