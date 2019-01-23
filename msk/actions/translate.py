@@ -243,7 +243,7 @@ class TranslateAction(ConsoleAction):
         for vocab_file in listdir(en_vocab):
             if ".intent" in vocab_file and vocab_file not in listdir(
                     lang_folder):
-                self.log.info("Translating " + vocab_file)
+                print("Translating " + vocab_file)
                 translated_voc = []
                 translated_voc.append('# This file is auto translated by mycroft-msk. \n')
                 translated_voc.append('# Please do a manuel inspection of the translation \n')
