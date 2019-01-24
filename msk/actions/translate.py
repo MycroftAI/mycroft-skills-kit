@@ -151,7 +151,10 @@ class TranslateAction(ConsoleAction):
         en_dialog = join(dialog, "en-us")
 
         if not isdir(en_dialog):
-            return False
+            dialog = join(self.folder, "locale")
+            en_dialog = join(dialog, "en-us")
+            if not isdir(en_dialog):
+                return False
 
         lang_folder = join(dialog, lang)
         makedirs(lang_folder, exist_ok=True)
@@ -192,7 +195,7 @@ class TranslateAction(ConsoleAction):
                                     fixed = " ".join(words)
                                     translated_dialog[idr] = fixed
                                 except Exception:
-                                    self.log.error(dialog_file + " needs manual fixing")
+                                    print(dialog_file + " needs manual fixing")
 
                 with open(join(lang_folder, dialog_file), "w") as f:
                     f.writelines(translated_dialog)
@@ -202,7 +205,10 @@ class TranslateAction(ConsoleAction):
         en_vocab = join(vocab, "en-us")
 
         if not isdir(en_vocab):
-            return False
+            vocab = join(self.folder, "locale")
+            en_vocab = join(vocab, "en-us")
+            if not isdir(en_vocab):
+                return False
 
         lang_folder = join(vocab, lang)
         makedirs(lang_folder, exist_ok=True)
@@ -261,7 +267,10 @@ class TranslateAction(ConsoleAction):
         en_regex = join(regex, "en-us")
 
         if not isdir(en_regex):
-            return False
+            regex = join(self.folder, "locale")
+            en_regex = join(regex, "en-us")
+            if not isdir(en_regex):
+                return False
 
         lang_folder = join(regex, lang)
         makedirs(lang_folder, exist_ok=True)
@@ -303,4 +312,3 @@ class TranslateAction(ConsoleAction):
 
                 with open(join(lang_folder, regex_file), "w") as f:
                     f.writelines(translated_regex)
-
