@@ -274,41 +274,22 @@ class TranslateAction(ConsoleAction):
 
         lang_folder = join(regex, lang)
         makedirs(lang_folder, exist_ok=True)
-        with open(join(lang_folder, 'AUTO_TRANSLATED'), "w") as f:
-            f.write('Files in this folder is auto translated by mycroft-msk. ')
-            f.write('Please do a manuel inspection of the translation in every file ')
+        with open(join(lang_folder, 'NOT_AUTO_TRANSLATED'), "w") as f:
+            f.write('Files in this folder is NOT translated by mycroft-msk. ')
+            f.write('Please do a manuel translation in every file ')
 
         for regex_file in listdir(en_regex):
             if ".rx" in regex_file and regex_file not in listdir(lang_folder):
-                print("Translating " + regex_file)
+                print("Copying regex " + regex_file)
                 translated_regex = []
-                translated_regex.append('# This file is auto translated by mycroft-msk. \n')
-                translated_regex.append('# Please do a manuel inspection of the translation \n')
+                translated_regex.append('# This file is NOT translated by mycroft-msk. \n')
+                translated_regex.append('# Please do a manuel translation ! \n')
                 translated_regex.append(' \n')
                 with open(join(en_regex, regex_file), "r") as f:
                     lines = f.readlines()
                     for line in lines:
                         translated_regex.append('# ' + line.strip('\n') + '\n')
-                        translated_regex.append(self.translate(line) +" \n")
-                # restore regex vars
-                original_tags = []
-                translated_tags = []
-                parenthesis = []
-                for line in lines:
-                    original_tags += re.findall('<[^>]*>', line)
-                for line in translated_regex:
-                    translated_tags += re.findall('<[^>]*>', line)
-                    parenthesis += re.findall('\([^)]*\)', line)
-                for idx, tag in enumerate(original_tags):
-                    for idr, line in enumerate(translated_regex):
-                        # fix spaces
-                        for p in parenthesis:
-                            if p in line:
-                                line = line.replace(p, p.replace(" ", ""))
-                        # restore var names
-                        fixed = line.replace(translated_tags[idx], original_tags[idx])
-
-                        translated_regex[idr] = fixed
+                        translated_regex.append(line + " \n")
 
                 with open(join(lang_folder, regex_file), "w") as f:
                     f.writelines(translated_regex)
