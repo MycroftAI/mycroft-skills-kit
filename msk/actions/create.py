@@ -266,8 +266,7 @@ class CreateAction(ConsoleAction):
             repo_name = (get_repo_name and get_repo_name()) or (
                     self.name + '-skill')
             repo = self.user.get_repo(repo_name)
-            call(['git', 'push', '-f', 'origin', 'master'],
-                 cwd=self.git.working_dir)
+            self.git.push('origin', 'master', force=True)
             print('Force pushed to GitHub repo:', repo.html_url)
             return repo
 
@@ -287,8 +286,7 @@ class CreateAction(ConsoleAction):
                     if e.status == 128:
                         raise UnrelatedGithubHistory(repo_name) from e
                     raise
-                call(['git', 'push', '-u', 'origin', 'master'],
-                     cwd=self.git.working_dir)
+                self.git.push('origin', 'master', set_upstream=True)
                 print('Linked and pushed to GitHub repo:', repo.html_url)
                 return repo
 
