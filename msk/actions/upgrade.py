@@ -31,7 +31,7 @@ from msk.repo_action import SkillData
 from msk.util import skills_kit_footer, create_or_edit_pr
 
 body_template = '''
-'This upgrades {skill_name} to include the following new commits:
+This upgrades {skill_name} to include the following new commits:
 
 {commits}
 
