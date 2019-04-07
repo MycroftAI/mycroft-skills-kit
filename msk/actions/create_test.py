@@ -78,12 +78,12 @@ class AdaptTestCreator(TestCreator):
     """
 
     intent_regex = (
-        r'''@intent_handler  \( IntentBuilder \( ['"]['"] \)(('''
-        r''' \. (optionally|require) \( ['"][a-zA-Z]+['"] \))*)\)  \n'''
-        r'''  def ([a-z_]+)'''
+        r'''@(?:\\\n )*intent_handler  (?:\n )*\(  IntentBuilder  \(  ['"][^'"]*['"]  \)((?:  '''
+        r'''\.  (?:optionally|require)  \(  ['"][a-zA-Z_]+['"]  \))*)\) \n'''
+        r'''(?: \\\n)* def (?:\\\n )*([a-z_]+)'''
     ).replace('  ', r'[\s\n]*').replace(' ', r'\s*')
 
-    parts_regex = r'''\. (require|optionally) \( ['"]([a-zA-Z]+)['"] \)'''.replace(' ', '\s*')
+    parts_regex = r'''\.  (require|optionally)  \(  ['"]([a-zA-Z_]+)['"]  \)'''.replace('  ', r'[\s\n]*').replace(' ', '\s*')
     intent_recipe = Lazy(lambda s: s.intent_recipes[s.intent_name])
 
     @Lazy
@@ -114,7 +114,7 @@ class AdaptTestCreator(TestCreator):
     @Lazy
     def intent_recipes(self) -> Dict[str, Dict[str, list]]:
         return {
-            match.group(4): self.extract_recipe(match.group(1))
+            match.group(2): self.extract_recipe(match.group(1))
             for match in re.finditer(self.intent_regex, self.init_content)
         }
 
