@@ -27,8 +27,7 @@ pip3 install msk
 ```bash
 msk create
 msk create-test /opt/mycroft/skills/myskill
-msk upload /opt/mycroft/skills/myskill
-msk upgrade /opt/mycroft/skills/myskill
+msk submit /opt/mycroft/skills/myskill
 ```
 ### Creating a New Skill
 
@@ -42,21 +41,15 @@ msk upgrade /opt/mycroft/skills/myskill
 
 [![msk-create-test](https://images2.imgbox.com/9c/c8/gLRS7xuL_o.gif)](https://asciinema.org/a/Ayzaj6QJbKGBfs2eIQWr11idH?speed=1.5)
 
-## Uploading New Skill
+## Submitting a new skill / Updating existing skill
 
-`msk upload /opt/mycroft/skills/myskill`:
+`msk submit /opt/mycroft/skills/myskill`:
 
-[![msk-upload](https://images2.imgbox.com/35/5d/BCVxUxuh_o.gif)](https://asciinema.org/a/Bp1sORVnmVz9wYjZXfempTPoO?speed=1.5)
-
-## Upgrading an Existing Skill
-
-```bash
-msk upgrade /opt/mycroft/skills/myskill
-```
+[![msk-submit](https://images2.imgbox.com/7a/5f/RcBxgLXc_o.gif)](https://asciinema.org/a/242108)
 
  --or--
 
 ```bash
 cd /opt/mycroft/skills/myskill
-msk upgrade .
+msk submit .
 ```
