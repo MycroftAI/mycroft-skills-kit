@@ -72,7 +72,8 @@ def create_skill():
 
 '''
 
-gitignore_template = '''*.pyc
+gitignore_template = '''__pycache__/
+*.qmlc
 settings.json
 
 '''
