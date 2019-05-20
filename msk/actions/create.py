@@ -78,46 +78,29 @@ settings.json
 
 '''
 
-settingsmeta_template = '''{{
-    "name": "{capital_desc}",
-    "skillMetadata": {{
-        "sections": [
-            {{
-                "name": "Options << Name of section",
-                "fields": [
-                    {{
-                        "name": "internal_python_variable_name",
-                        "type": "text",
-                        "label": "Setting Friendly Display Name",
-                        "value": "",
-                        "placeholder": "demo prompt in the input box"
-                    }}
-                ]
-            }},
-            {{
-                "name": "Login << Name of another section",
-                "fields": [
-                    {{
-                        "type": "label",
-                        "label": "Just a little bit of extra info for the user to understand following settings"
-                    }},
-                    {{
-                        "name": "username",
-                        "type": "text",
-                        "label": "Username",
-                        "value": ""
-                    }},
-                    {{
-                        "name": "password",
-                        "type": "password",
-                        "label": "Password",
-                        "value": ""
-                    }}
-                ]
-            }}
-        ]
-    }}
-}}'''
+settingsmeta_template = '''name: {capital_desc}
+skillMetadata:
+  sections:
+    - name: Options << Name of section
+      fields:
+        - name: internal_python_variable_name
+          type: text
+          label: Setting Friendly Display Name
+          value: ""
+          placeholder: demo prompt in the input box
+    - name: Login << Name of another section
+      fields:
+        - type: label
+          label: Just a little bit of extra info for the user to understand following settings
+        - name: username
+          type: text
+          label: Username
+          value: ""
+        - name: password
+          type: password
+          label: Password
+          value: ""
+'''
 
 
 class CreateAction(ConsoleAction):
@@ -232,7 +215,7 @@ class CreateAction(ConsoleAction):
             ('__init__.py', lambda: self.init_file),
             ('README.md', lambda: self.readme),
             ('.gitignore', lambda: gitignore_template),
-            ('settingsmeta.json', lambda: settingsmeta_template.format(
+            ('settingsmeta.yaml', lambda: settingsmeta_template.format(
                 capital_desc=self.name.replace('-', ' ').capitalize()
             )),
             ('.git', lambda: git.init())
