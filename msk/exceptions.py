@@ -40,3 +40,26 @@ class NotUploaded(MskException):
 
 class PRModified(MskException):
     pass
+
+
+class SkillNameTaken(GithubRepoExists):
+    """
+    raised when you try to submit a skill with an already taken unique name
+    """
+    pass
+
+
+class UnrelatedGithubHistory(GithubRepoExists):
+    """
+    raised when you try to update a remote with unrelated commit history
+    """
+    pass
+
+
+class NoGitRepository(MskException):
+    """
+    Raised when a skill cannot be updated because it does not belong to any
+    git repo
+    """
+    pass
+

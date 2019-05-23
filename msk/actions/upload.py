@@ -29,7 +29,8 @@ from os.path import join, abspath, expanduser, basename
 
 from msk.actions.create import CreateAction
 from msk.console_action import ConsoleAction
-from msk.exceptions import MskException
+from msk.exceptions import MskException, NoGitRepository, \
+    UnrelatedGithubHistory, GithubRepoExists
 from msk.lazy import Lazy
 from msk.repo_action import SkillData
 from msk.util import skills_kit_footer, \
@@ -74,11 +75,25 @@ class UploadAction(ConsoleAction):
         creator.initialize_template({'.git', '.gitignore', 'README.md'})
         self.git.add('README.md')
         creator.commit_changes()
-        skill_repo = creator.create_github_repo(lambda: input('Repo name:'))
+
+        try:
+            skill_repo = creator.create_github_repo(
+                lambda: input('Repo name:'))
+        except GithubRepoExists:
+            try:
+                print("A repository with that name already exists")
+                skill_repo = creator.link_github_repo(
+                    lambda: input('Remote repo name:'))
+            except UnrelatedGithubHistory:
+                print("Repository history does not seem to be related")
+                skill_repo = creator.force_push(
+                    lambda: input('Confirm repo name:'))
         if skill_repo:
             self.entry.url = skill_repo.html_url
             self.entry.author = self.user.login
         else:
+            if not self.entry.url:
+                raise NoGitRepository
             skill_repo = self.github.get_repo(skill_repo_name(self.entry.url))
 
         if not skill_repo.permissions.push:
