@@ -23,7 +23,7 @@ from setuptools import setup
 
 setup(
     name='msk',
-    version='0.3.12',  # Also update in msk/__init__.py
+    version='0.3.13',  # Also update in msk/__init__.py
     packages=['msk', 'msk.actions'],
     install_requires=['GitPython', 'typing', 'msm>=0.5.13', 'pygithub'],
     url='https://github.com/MycroftAI/mycroft-skills-kit',
