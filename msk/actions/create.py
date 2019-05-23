@@ -38,21 +38,25 @@ from msk.lazy import Lazy
 from msk.util import ask_input, to_camel, ask_yes_no, ask_input_lines, \
     print_error
 
-readme_template = '''## {title_name}
+readme_template = '''# <img src="https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/robot.svg" card_color="#40DBB0" width="50" height="50" style="vertical-align:bottom"/> \
+{title_name}
 {short_description}
 
-## Description
+## About
 {long_description}
 
 ## Examples
 {examples}
-
 {credits}
+## Category
+**{category_primary}**
+{categories_other}
+## Tags
+{tags}
 '''
 
 credits_template = '''## Credits
 {author}
-
 '''
 
 init_template = '''from mycroft import MycroftSkill, intent_file_handler
@@ -142,7 +146,7 @@ class CreateAction(ConsoleAction):
     path = Lazy(lambda s: join(s.msm.skills_dir, s.name + '-skill'))
     git = Lazy(lambda s: Git(s.path))
     short_description = Lazy(lambda s: ask_input(
-        'Enter a one line description for your skill (ie. Orders fresh pizzas from the store):',
+        'Enter a one line description for your skill (ie. Orders fresh pizzas from the store):\n-',
     ).capitalize())
     author = Lazy(lambda s: ask_input('Enter author:'))
     intent_lines = Lazy(lambda s: [
@@ -164,12 +168,33 @@ class CreateAction(ConsoleAction):
     long_description = Lazy(lambda s: '\n\n'.join(
         ask_input_lines('Enter a long description:', '>')
     ).strip().capitalize())
+    category_options = [
+        'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
+        'Music & Audio', 'Media', 'Productivity', 'Transport']
+    category_primary = Lazy(lambda s: ask_input(
+        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(', '.join(s.category_options)),
+        lambda x: x in s.category_options
+    ))
+    categories_other = Lazy(lambda s: [
+        i.capitalize() for i in ask_input_lines(
+            'Enter additional categories (optional):', '-'
+        )
+    ])
+    tags = Lazy(lambda s: [
+        i.capitalize() for i in ask_input_lines(
+            'Enter tags to make it easier to search for your skill (optional):',
+            '-'
+        )
+    ])
     readme = Lazy(lambda s: readme_template.format(
         title_name=s.name.replace('-', ' ').title(),
         short_description=s.short_description,
         long_description=s.long_description,
-        examples=''.join(' - "{}"\n'.format(i) for i in s.intent_lines),
-        credits=credits_template.format(author=s.author)
+        examples=''.join('* "{}"\n'.format(i) for i in s.intent_lines),
+        credits=credits_template.format(author=s.author),
+        category_primary=s.category_primary,
+        categories_other=''.join('{}\n'.format(i) for i in s.categories_other),
+        tags=''.join('#{}\n'.format(i) for i in s.tags)
     ))
     init_file = Lazy(lambda s: init_template.format(
         class_name=to_camel(s.name.replace('-', '_')),
