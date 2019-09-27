@@ -30,9 +30,10 @@ from github import Github, GithubException
 from github.Repository import Repository
 from msm import SkillEntry
 from os import chmod
-from os.path import join
+from os.path import join, dirname
 from tempfile import mkstemp
 from typing import Optional
+from glob import glob
 
 from msk import __version__
 from msk.exceptions import PRModified, MskException, SkillNameTaken
@@ -210,3 +211,8 @@ def serialized(func):
         )
 
     return wrapper
+
+def get_licenses():
+    licenses = glob(join(dirname(__file__), 'licenses', '*.txt'))
+    licenses.sort()
+    return licenses
