@@ -27,7 +27,8 @@ from git import Git, GitCommandError
 from github import GithubException
 from github.Repository import Repository
 from os import makedirs
-from os.path import join, exists, isdir
+from os.path import join, exists, isdir, basename, splitext
+import shutil
 from shutil import rmtree
 from subprocess import call
 from typing import Callable, Optional
@@ -36,7 +37,7 @@ from msk.console_action import ConsoleAction
 from msk.exceptions import GithubRepoExists, UnrelatedGithubHistory
 from msk.lazy import Lazy
 from msk.util import ask_input, to_camel, ask_yes_no, ask_input_lines, \
-    print_error
+    print_error, get_licenses
 
 readme_template = '''# <img src="https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/robot.svg" card_color="#40DBB0" width="50" height="50" style="vertical-align:bottom"/> \
 {title_name}
@@ -107,6 +108,13 @@ skillMetadata:
 '''
 
 
+def pretty_license(path):
+    pretty = basename(path)
+    pretty = splitext(pretty)[0]
+    pretty = pretty.replace('-', ' ')
+    return pretty
+
+
 class CreateAction(ConsoleAction):
     def __init__(self, args, name: str = None):
         if name:
@@ -172,7 +180,8 @@ class CreateAction(ConsoleAction):
         'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
         'Music & Audio', 'Media', 'Productivity', 'Transport']
     category_primary = Lazy(lambda s: ask_input(
-        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(', '.join(s.category_options)),
+        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(
+            ', '.join(s.category_options)),
         lambda x: x in s.category_options
     ))
     categories_other = Lazy(lambda s: [
@@ -220,25 +229,37 @@ class CreateAction(ConsoleAction):
     ))
     intent_name = Lazy(lambda s: '.'.join(reversed(s.name.split('-'))))
 
-    def add_vocab(self):
-        makedirs(join(self.path, 'vocab', self.lang))
-        with open(join(self.path, 'vocab', self.lang, self.intent_name + '.intent'), 'w') as f:
+    def add_locale(self):
+        makedirs(join(self.path, 'locale', self.lang))
+        with open(join(self.path, 'locale', self.lang, self.intent_name + '.intent'), 'w') as f:
             f.write('\n'.join(self.intent_lines + ['']))
-
-    def add_dialog(self):
-        makedirs(join(self.path, 'dialog', self.lang))
-        with open(join(self.path, 'dialog', self.lang, self.intent_name + '.dialog'), 'w') as f:
+        with open(join(self.path, 'locale', self.lang, self.intent_name + '.dialog'), 'w') as f:
             f.write('\n'.join(self.dialog_lines + ['']))
+
+    def license(self):
+        """Ask user to select a license for the repo."""
+        license_files = get_licenses()
+        print('For uploading a skill a license is required.\n'
+              'Choose one of the licenses listed below or add one later.\n')
+        for num, pth in zip(range(1, 1 + len(license_files)), license_files):
+            print('{}: {}'.format(num, pretty_license(pth)))
+        choice = ask_input('Choose license above or press Enter to skip?')
+        if choice.isdigit():
+            index = int(choice) - 1
+            shutil.copy(license_files[index], join(self.path, 'LICENSE.md'))
+            print('\nSome of these require that you insert the project name '
+                  'and/or author\'s name. Please check the license file and '
+                  'add the appropriate information.\n')
 
     def initialize_template(self, files: set = None):
         git = Git(self.path)
 
         skill_template = [
             ('', lambda: makedirs(self.path)),
-            ('vocab', self.add_vocab),
-            ('dialog', self.add_dialog),
+            ('locale', self.add_locale),
             ('__init__.py', lambda: self.init_file),
             ('README.md', lambda: self.readme),
+            ('LICENSE.md', self.license),
             ('.gitignore', lambda: gitignore_template),
             ('settingsmeta.yaml', lambda: settingsmeta_template.format(
                 capital_desc=self.name.replace('-', ' ').capitalize()

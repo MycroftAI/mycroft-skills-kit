@@ -22,7 +22,7 @@
 import os
 import shutil
 from argparse import ArgumentParser
-from git import Git
+from git import Git, GitCommandError
 from msm import SkillEntry
 from os import listdir
 from os.path import join, abspath, expanduser, basename
@@ -48,6 +48,19 @@ This PR adds the new skill, [{skill_name}]({skill_url}), to the skills repo.
 ''' + skills_kit_footer
 
 
+def exists_in_remote(git, repo_path):
+    """Checks if the file at repo_path exists in remote HEAD."""
+    try:
+        remote_info = git.remote('show', 'origin').split('\n')
+        heads = [e.split(':')[1].strip() for e in remote_info if 'HEAD' in e]
+        remote_file = 'origin/{}:{}'.format(heads[0], repo_path)
+        git.cat_file(remote_file, e=True)
+    except GitCommandError:
+        return False
+    else:
+        return True
+
+
 class UploadAction(ConsoleAction):
     def __init__(self, args):
         folder = abspath(expanduser(args.skill_folder))
@@ -57,6 +70,7 @@ class UploadAction(ConsoleAction):
             raise MskException('Skill folder, {}, not directly within skills directory, {}.'.format(
                 args.skill_folder, self.msm.skills_dir
             ))
+        self.skill_dir = folder
 
     git = Lazy(lambda s: Git(s.entry.path))  # type: Git
 
@@ -64,8 +78,49 @@ class UploadAction(ConsoleAction):
     def register(parser: ArgumentParser):
         pass  # Implemented in SubmitAction
 
+    def check_valid(self):
+        """Check that the skill contains all required files before uploading.
+        """
+        results = []
+        if not (exists_in_remote(self.git, 'LICENSE.md') or
+                exists_in_remote(self.git, 'LICENSE') or
+                exists_in_remote(self.git, 'LICENSE.txt')):
+            print('To have your Skill available for installation through the '
+                  'Skills Marketplace, a license is required.\n'
+                  'Please select one and add it to the skill as '
+                  '`LICENSE.md.`\n'
+                  'See https://opensource.org/licenses for information on '
+                  'open source license options.')
+            results.append(False)
+        else:
+            results.append(True)
+
+        if not exists_in_remote(self.git, 'README.md'):
+            print('For inclusion in the Mycroft Marketplace a README.md file '
+                  'is required. please add the file and retry.')
+            results.append(False)
+        else:
+            results.append(True)
+
+        with open(join(self.skill_dir, 'README.md')) as f:
+            readme = f.read()
+        if '# About' not in readme and '# Description' not in readme:
+            print('README is missing About Section needed by the Marketplace')
+            results.append(False)
+        else:
+            results.append(True)
+
+        if '# Category' not in readme:
+            print('README is missing Category section needed by the '
+                  'Marketplace')
+            results.append(False)
+        else:
+            results.append(True)
+        return all(results)
+
     def perform(self):
         print('Uploading a new skill to the skill repo...')
+
         for i in listdir(self.entry.path):
             if i.lower() == 'readme.md' and i != 'README.md':
                 shutil.move(join(self.entry.path, i), join(self.entry.path, 'README.md'))
@@ -104,6 +159,12 @@ class UploadAction(ConsoleAction):
                 self.git.remote('rename', 'origin', 'upstream')
                 self.git.remote('add', 'origin', skill_repo.html_url)
 
+        # verify that the required files exists in origin and contain the
+        # required content.
+        if not self.check_valid():
+            print("Please add the missing information and rerun the command.")
+            return
+
         self.entry.name = input('Enter a unique skill name (ie. npr-news or grocery-list): ')
 
         readme_file = {i.lower(): i for i in os.listdir(self.entry.path)}['readme.md']
@@ -124,12 +185,6 @@ class UploadAction(ConsoleAction):
             description = sections['about']
         elif 'description' in sections:
             description = sections['description']
-        else:
-            choice = ask_choice(
-                'Which section contains the description?', list(sections),
-                on_empty='Please create a description section in the README'
-            )
-            description = sections[choice]
 
         branch = SkillData(self.entry).add_to_repo()
         self.repo.push_to_fork(branch)
