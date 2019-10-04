@@ -180,7 +180,8 @@ class CreateAction(ConsoleAction):
         'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
         'Music & Audio', 'Media', 'Productivity', 'Transport']
     category_primary = Lazy(lambda s: ask_input(
-        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(', '.join(s.category_options)),
+        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(
+            ', '.join(s.category_options)),
         lambda x: x in s.category_options
     ))
     categories_other = Lazy(lambda s: [
@@ -228,14 +229,11 @@ class CreateAction(ConsoleAction):
     ))
     intent_name = Lazy(lambda s: '.'.join(reversed(s.name.split('-'))))
 
-    def add_vocab(self):
-        makedirs(join(self.path, 'vocab', self.lang))
-        with open(join(self.path, 'vocab', self.lang, self.intent_name + '.intent'), 'w') as f:
+    def add_locale(self):
+        makedirs(join(self.path, 'locale', self.lang))
+        with open(join(self.path, 'locale', self.lang, self.intent_name + '.intent'), 'w') as f:
             f.write('\n'.join(self.intent_lines + ['']))
-
-    def add_dialog(self):
-        makedirs(join(self.path, 'dialog', self.lang))
-        with open(join(self.path, 'dialog', self.lang, self.intent_name + '.dialog'), 'w') as f:
+        with open(join(self.path, 'locale', self.lang, self.intent_name + '.dialog'), 'w') as f:
             f.write('\n'.join(self.dialog_lines + ['']))
 
     def license(self):
@@ -258,8 +256,7 @@ class CreateAction(ConsoleAction):
 
         skill_template = [
             ('', lambda: makedirs(self.path)),
-            ('vocab', self.add_vocab),
-            ('dialog', self.add_dialog),
+            ('locale', self.add_locale),
             ('__init__.py', lambda: self.init_file),
             ('README.md', lambda: self.readme),
             ('LICENSE.md', self.license),
