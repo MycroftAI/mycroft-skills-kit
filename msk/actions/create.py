@@ -23,6 +23,7 @@ import atexit
 
 import re
 from argparse import ArgumentParser
+import requests
 from git import Git, GitCommandError
 from github import GithubException
 from github.Repository import Repository
@@ -32,6 +33,7 @@ import shutil
 from shutil import rmtree
 from subprocess import call
 from typing import Callable, Optional
+from colorama import Style, Fore, init as colorama_init
 
 from msk.console_action import ConsoleAction
 from msk.exceptions import GithubRepoExists, UnrelatedGithubHistory
@@ -39,7 +41,7 @@ from msk.lazy import Lazy
 from msk.util import ask_input, to_camel, ask_yes_no, ask_input_lines, \
     print_error, get_licenses
 
-readme_template = '''# <img src="https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/robot.svg" card_color="#40DBB0" width="50" height="50" style="vertical-align:bottom"/> \
+readme_template = '''# <img src="https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/{icon}.svg" card_color="{color}" width="50" height="50" style="vertical-align:bottom"/> \
 {title_name}
 {short_description}
 
@@ -83,7 +85,7 @@ settings.json
 
 '''
 
-settingsmeta_template = '''name: {capital_desc}
+settingsmeta_template = '''
 skillMetadata:
   sections:
     - name: Options << Name of section
@@ -117,6 +119,7 @@ def pretty_license(path):
 
 class CreateAction(ConsoleAction):
     def __init__(self, args, name: str = None):
+        colorama_init()
         if name:
             self.name = name
 
@@ -176,11 +179,29 @@ class CreateAction(ConsoleAction):
     long_description = Lazy(lambda s: '\n\n'.join(
         ask_input_lines('Enter a long description:', '>')
     ).strip().capitalize())
+    icon = Lazy(lambda s: ask_input(
+        'Go to Font Awesome ({blue}fontawesome.com/cheatsheet{reset}) and choose an icon.'
+        '\nEnter the name of the icon:'.format(blue=Fore.BLUE + Style.BRIGHT, reset=Style.RESET_ALL),
+        validator=lambda x:
+        requests.get("https://raw.githack.com/FortAwesome/Font-Awesome/"
+                     "master/svgs/solid/{x}.svg".format(x=x)).ok,
+        on_fail="\n\n{red}Error: The name was not found. Make sure you spelled the icon name right,"
+                " and try again.{reset}\n".format(red=Fore.RED + Style.BRIGHT, reset=Style.RESET_ALL)))
+    color = Lazy(lambda s: ask_input(
+        "Pick a {yellow}color{reset} for your icon. Find a color that matches the color scheme at"
+        " {blue}mycroft.ai/colors{reset}, or pick a color at: {blue}color-hex.com.{reset}"
+        "\nEnter the color hex code (including the #):".format(blue=Fore.BLUE + Style.BRIGHT, yellow=Fore.YELLOW,
+                                                                reset=Style.RESET_ALL),
+        validator=lambda x: "#" in x[0],
+        on_fail="\n{red}Check that you entered the #, and try again.{reset}\n".format(red=Fore.RED + Style.BRIGHT,
+                                                                                      reset=Style.RESET_ALL)
+    ))
     category_options = [
         'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
         'Music & Audio', 'Media', 'Productivity', 'Transport']
     category_primary = Lazy(lambda s: ask_input(
-        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(', '.join(s.category_options)),
+        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(
+            ', '.join(s.category_options)),
         lambda x: x in s.category_options
     ))
     categories_other = Lazy(lambda s: [
@@ -200,6 +221,8 @@ class CreateAction(ConsoleAction):
         long_description=s.long_description,
         examples=''.join('* "{}"\n'.format(i) for i in s.intent_lines),
         credits=credits_template.format(author=s.author),
+        icon=s.icon,
+        color=s.color.upper(),
         category_primary=s.category_primary,
         categories_other=''.join('{}\n'.format(i) for i in s.categories_other),
         tags=''.join('#{}\n'.format(i) for i in s.tags)
@@ -238,6 +261,11 @@ class CreateAction(ConsoleAction):
         with open(join(self.path, 'dialog', self.lang, self.intent_name + '.dialog'), 'w') as f:
             f.write('\n'.join(self.dialog_lines + ['']))
 
+    def check_icon(self, icon):
+        resp = requests.get("https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/{icon}.svg"
+                            .format(icon=icon))
+        return resp.ok
+
     def license(self):
         """Ask user to select a license for the repo."""
         license_files = get_licenses()
@@ -264,9 +292,7 @@ class CreateAction(ConsoleAction):
             ('README.md', lambda: self.readme),
             ('LICENSE.md', self.license),
             ('.gitignore', lambda: gitignore_template),
-            ('settingsmeta.yaml', lambda: settingsmeta_template.format(
-                capital_desc=self.name.replace('-', ' ').capitalize()
-            )),
+            ('settingsmeta.yaml', lambda: settingsmeta_template),
             ('.git', lambda: git.init())
         ]
 
