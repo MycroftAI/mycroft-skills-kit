@@ -190,11 +190,11 @@ class CreateAction(ConsoleAction):
     color = Lazy(lambda s: ask_input(
         "Pick a {yellow}color{reset} for your icon. Find a color that matches the color scheme at"
         " {blue}mycroft.ai/colors{reset}, or pick a color at: {blue}color-hex.com.{reset}"
-        "\nEnter the color hex code (including the #):".format(blue=Fore.BLUE + Style.BRIGHT, yellow=Fore.YELLOW,
-                                                                reset=Style.RESET_ALL),
-        validator=lambda x: "#" in x[0],
-        on_fail="\n{red}Check that you entered the #, and try again.{reset}\n".format(red=Fore.RED + Style.BRIGHT,
-                                                                                      reset=Style.RESET_ALL)
+        "\nEnter the color hex code (including the #):".format(blue=Fore.BLUE + Style.BRIGHT, yellow=Fore.YELLOW, reset=Style.RESET_ALL),
+        validator=lambda hex_code: hex_code[0] == "#" and len(hex_code) in [4, 7],
+        on_fail="\n{red}Check that you entered a correct hex code, and try again.{reset}\n".format(
+            red=Fore.RED + Style.BRIGHT,
+            reset=Style.RESET_ALL)
     ))
     category_options = [
         'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
@@ -260,11 +260,6 @@ class CreateAction(ConsoleAction):
         makedirs(join(self.path, 'dialog', self.lang))
         with open(join(self.path, 'dialog', self.lang, self.intent_name + '.dialog'), 'w') as f:
             f.write('\n'.join(self.dialog_lines + ['']))
-
-    def check_icon(self, icon):
-        resp = requests.get("https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/{icon}.svg"
-                            .format(icon=icon))
-        return resp.ok
 
     def license(self):
         """Ask user to select a license for the repo."""
