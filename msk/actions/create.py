@@ -108,6 +108,7 @@ skillMetadata:
 '''
 
 
+
 def pretty_license(path):
     pretty = basename(path)
     pretty = splitext(pretty)[0]
@@ -180,7 +181,8 @@ class CreateAction(ConsoleAction):
         'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
         'Music & Audio', 'Media', 'Productivity', 'Transport']
     category_primary = Lazy(lambda s: ask_input(
-        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(', '.join(s.category_options)),
+        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(
+            ', '.join(s.category_options)),
         lambda x: x in s.category_options
     ))
     categories_other = Lazy(lambda s: [
@@ -194,6 +196,61 @@ class CreateAction(ConsoleAction):
             '-'
         )
     ])
+
+    @Lazy
+    def dependencies(self):
+        deps = "dependencies:\n"
+        if ask_yes_no(message="Does this skill depend on Python Packages (PyPI), System Packages (apt-get/others),"
+                              " or other skills? (y/N)", default=False):
+            if ask_yes_no("Does the skill depend on any Python Packages (PyPI)? (y/N)", default=False):
+                python_deps = ask_input_lines(message="What Python Packages (on PyPI) does your skill need?\n"
+                                                      "(You can include a version number if you need: "
+                                                      "phil >= 1.3.0)", bullet=" - ")
+                deps += """
+    # Pip dependencies on PyPI
+    python:"""
+                for python_dep in python_deps:
+                    deps += "\n      - {}".format(python_dep)
+
+            if ask_yes_no("Does the skill depend on any System Packages (such as apt-get)? (y/N)", default=False):
+                system_deps = ask_input_lines(message="What System Packages does your skill need?\n"
+                                                                     "These Packages will be installed through package"
+                                                                     " managers, like apt-get.", bullet=" - ")
+                deps += """
+    # Install packages with the system package manager
+    # This searches for the provided executable and uses the package names
+    system:
+      all:"""
+                for system_dep in system_deps:
+                    deps += " {}".format(system_dep)
+
+                deps += """
+    # If the package has a certain name on a different platform:
+    # pkcon: pianobar libpiano-dev  # For the mycroft platform
+    # apt-get: pianobar libpiano-dev  # For Ubuntu/Debian
+    #
+    # Require certain executables to be in the PATH for the install to succeed
+#   exes:
+#     - pianobar
+"""
+            if ask_yes_no("Does the skill depend on any other skills that are available through the Skill Marketplace? (y/N)",
+                          default=False):
+                skill_deps = ask_input_lines(message="What skills does your skill depend on?", bullet=" - ")
+                deps += """
+    # Require the installation of other skills before installing this skill
+    skills:
+                """
+                for skill_dep in skill_deps:
+                    deps += "\n      - {}".format(skill_dep)
+
+            ask_yes_no(
+                message="NOTE: It is strongly recommended that you look in at manifest.yml,"
+                        " so you can verify that everying is correct."
+                        "\nThis also lets you set if you want certain executables on your PATH, etc... OKAY? (Y/n)", default=True)
+
+            return deps
+        return None
+
     readme = Lazy(lambda s: readme_template.format(
         title_name=s.name.replace('-', ' ').title(),
         short_description=s.short_description,
@@ -202,7 +259,7 @@ class CreateAction(ConsoleAction):
         credits=credits_template.format(author=s.author),
         category_primary=s.category_primary,
         categories_other=''.join('{}\n'.format(i) for i in s.categories_other),
-        tags=''.join('#{}\n'.format(i) for i in s.tags)
+        tags=''.join('#{}\n'.format(i) for i in s.tags),
     ))
     init_file = Lazy(lambda s: init_template.format(
         class_name=to_camel(s.name.replace('-', '_')),
@@ -226,6 +283,11 @@ class CreateAction(ConsoleAction):
         ),
         intent_name=s.intent_name
     ))
+    if Lazy(lambda s: s.dependencies):
+        manifest = Lazy(lambda s: s.dependencies)
+    else:
+        manifest = False
+
     intent_name = Lazy(lambda s: '.'.join(reversed(s.name.split('-'))))
 
     def add_vocab(self):
@@ -269,6 +331,8 @@ class CreateAction(ConsoleAction):
             )),
             ('.git', lambda: git.init())
         ]
+        if self.manifest:
+            skill_template.append(("manifest.yml", lambda: self.manifest))
 
         def cleanup():
             rmtree(self.path)
