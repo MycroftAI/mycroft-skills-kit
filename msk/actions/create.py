@@ -136,7 +136,7 @@ manifest_template = """
 #     - pianobar
 #
 #   # Require the installation of other skills before installing this skill
-#   skills:
+#   skill:
 #     - my-other-skill
 """
 
