@@ -249,7 +249,7 @@ class CreateAction(ConsoleAction):
 
     manifest = Lazy(lambda s: manifest_template if ask_yes_no(message="Does this Skill depend on Python Packages (PyPI), System Packages (apt-get/others), or other skills?"
                                                             "\nThis will create a manifest.yml file for you to define the dependencies for your Skill."
-                                                             "\nCheck the Mycroft documentation at mycroft.ai/documentation to learn more about including dependencies, and the manifest.yml file, in Skills. (y/N)", default=False) else None)
+                                                             "\nCheck the Mycroft documentation at mycroft.ai/to/skill-dependencies to learn more about including dependencies, and the manifest.yml file, in Skills. (y/N)", default=False) else None)
 
     readme = Lazy(lambda s: readme_template.format(
         title_name=s.name.replace('-', ' ').title(),
