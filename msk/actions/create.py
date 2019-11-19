@@ -324,7 +324,6 @@ class CreateAction(ConsoleAction):
                 capital_desc=self.name.replace('-', ' ').capitalize()
             )),
             ('manifest.yml', lambda: self.manifest),
-            ('settingsmeta.yaml', lambda: settingsmeta_template),
             ('.git', lambda: git.init())
         ]
 
