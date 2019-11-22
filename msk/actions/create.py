@@ -109,6 +109,37 @@ skillMetadata:
           value: ""
 '''
 
+manifest_template = """
+# This file details all external dependencies required by your skill. If your skill does
+# not require any dependencies, please delete this file before submitting a pull request.
+#
+# To use this file, uncomment the lines you need, and fill in the appropriate information.
+#
+# dependencies:
+#   # Pip dependencies on PyPI
+#   python:
+#     - requests
+#     - gensim
+#
+#   # Install packages with the system package manager
+#   # This searches for the provided executable and uses the package names
+#   system:
+#     # For simple packages, this is all that is necessary
+#     all: pianobar piano-dev
+#
+#     # If the package has a certain name on a different platform:
+#     pkcon: pianobar libpiano-dev  # For the mycroft platform
+#     apt-get: pianobar libpiano-dev  # For Ubuntu/Debian
+#
+#   # Require certain executables to be in the PATH for the install to succeed
+#   exes:
+#     - pianobar
+#
+#   # Require the installation of other skills before installing this skill
+#   skill:
+#     - my-other-skill
+"""
+
 
 def pretty_license(path):
     pretty = basename(path)
@@ -215,6 +246,11 @@ class CreateAction(ConsoleAction):
             '-'
         )
     ])
+
+    manifest = Lazy(lambda s: manifest_template if ask_yes_no(message="Does this Skill depend on Python Packages (PyPI), System Packages (apt-get/others), or other skills?"
+                                                            "\nThis will create a manifest.yml file for you to define the dependencies for your Skill."
+                                                             "\nCheck the Mycroft documentation at mycroft.ai/to/skill-dependencies to learn more about including dependencies, and the manifest.yml file, in Skills. (y/N)", default=False) else None)
+
     readme = Lazy(lambda s: readme_template.format(
         title_name=s.name.replace('-', ' ').title(),
         short_description=s.short_description,
@@ -225,7 +261,7 @@ class CreateAction(ConsoleAction):
         color=s.color.upper(),
         category_primary=s.category_primary,
         categories_other=''.join('{}\n'.format(i) for i in s.categories_other),
-        tags=''.join('#{}\n'.format(i) for i in s.tags)
+        tags=''.join('#{}\n'.format(i) for i in s.tags),
     ))
     init_file = Lazy(lambda s: init_template.format(
         class_name=to_camel(s.name.replace('-', '_')),
@@ -249,6 +285,7 @@ class CreateAction(ConsoleAction):
         ),
         intent_name=s.intent_name
     ))
+
     intent_name = Lazy(lambda s: '.'.join(reversed(s.name.split('-'))))
 
     def add_locale(self):
@@ -283,9 +320,13 @@ class CreateAction(ConsoleAction):
             ('README.md', lambda: self.readme),
             ('LICENSE.md', self.license),
             ('.gitignore', lambda: gitignore_template),
-            ('settingsmeta.yaml', lambda: settingsmeta_template),
+            ('settingsmeta.yaml', lambda: settingsmeta_template.format(
+                capital_desc=self.name.replace('-', ' ').capitalize()
+            )),
+            ('manifest.yml', lambda: self.manifest),
             ('.git', lambda: git.init())
         ]
+
 
         def cleanup():
             rmtree(self.path)
