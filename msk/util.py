@@ -41,9 +41,9 @@ from msk.exceptions import PRModified, MskException, SkillNameTaken
 ASKPASS = '''#!/usr/bin/env python3
 import sys
 print(
-    "{password}"
+    r"""{password}"""
     if sys.argv[1] == "Password for 'https://{username}@github.com': " else
-    "{username}"
+    r"""{username}"""
 )'''
 
 skills_kit_footer = '<sub>Created with [mycroft-skills-kit]({}) v{}</sub>'.format(
@@ -57,7 +57,10 @@ def register_git_injector(username, password):
     atexit.register(lambda: os.remove(tmp_path))
 
     with os.fdopen(fd, 'w') as f:
-        f.write(ASKPASS.format(username=username, password=password or ''))
+        f.write(ASKPASS.format(
+            username=username.replace('"""', r'\"\"\"'),
+            password=password.replace('"""', r'\"\"\"') or ''
+        ))
 
     chmod(tmp_path, 0o700)
     os.environ['GIT_ASKPASS'] = tmp_path
