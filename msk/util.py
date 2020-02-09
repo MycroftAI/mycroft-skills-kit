@@ -69,6 +69,7 @@ def register_git_injector(token):
 
 
 def ask_for_github_token() -> Github:
+    """Ask for GitHub Token if there isnt stored token or stored token is invalid"""
     print('')
     token = get_stored_github_token()
     if token and check_token(token):
@@ -79,7 +80,6 @@ def ask_for_github_token() -> Github:
         retry = False
         while True:
             if not retry:
-                print('=== GitHub Personal Access Token ===')
                 print('To auhenticate with GitHub a Personal Access Token is needed.')
                 print('    1. Go to https://github.com/settings/tokens/new create one')
                 print('    2. Give the token a name like mycroft-msk') 
@@ -106,6 +106,7 @@ def ask_for_github_token() -> Github:
 
 
 def check_token(token):
+    """Check if at GitHub Token has 'repo' in the scope"""
     github = Github(token)
     try:
         _ = github.get_user().login
@@ -120,6 +121,7 @@ def check_token(token):
 
 
 def get_stored_github_token():
+    """Returns stored GitHub token or false if there isnt one or the token is invalid"""
     if os.path.isfile(tokenfile):
         with open(tokenfile, 'r') as f:
             token = f.readline()
@@ -133,6 +135,7 @@ def get_stored_github_token():
 
 
 def store_github_token(token):
+    """Ask if user will store GitHUb token and if yes store"""
     print('')
     if ask_yes_no('Do you want msk to store the GitHub Personal Access Token? (Y/n)', True):
         if not os.path.exists(tokendir):
