@@ -34,6 +34,7 @@ from os.path import join, dirname
 from tempfile import mkstemp
 from typing import Optional
 from glob import glob
+from pathlib import Path
 
 from msk import __version__
 from msk.exceptions import PRModified, MskException, SkillNameTaken
@@ -41,9 +42,8 @@ from msk.exceptions import PRModified, MskException, SkillNameTaken
 ASKPASS = '''#!/usr/bin/env python3
 import sys
 print(
-    r"""{password}"""
-    if sys.argv[1] == "Password for 'https://{username}@github.com': " else
-    r"""{username}"""
+    if sys.argv[1] == "Password for 'https://{token}@github.com': " else
+    r"""{token}"""
 )'''
 
 skills_kit_footer = '<sub>Created with [mycroft-skills-kit]({}) v{}</sub>'.format(
@@ -51,38 +51,63 @@ skills_kit_footer = '<sub>Created with [mycroft-skills-kit]({}) v{}</sub>'.forma
 )
 
 
-def register_git_injector(username, password):
-    """Generate a script that writes the password to the git command line tool"""
+def register_git_injector(token):
+    """Generate a script that writes the token to the git command line tool"""
     fd, tmp_path = mkstemp()
     atexit.register(lambda: os.remove(tmp_path))
 
     with os.fdopen(fd, 'w') as f:
         f.write(ASKPASS.format(
-            username=username.replace('"""', r'\"\"\"'),
-            password=password.replace('"""', r'\"\"\"') or ''
+            token=token.replace('"""', r'\"\"\"')
         ))
 
     chmod(tmp_path, 0o700)
     os.environ['GIT_ASKPASS'] = tmp_path
 
 
-def ask_for_github_credentials(use_token=False) -> Github:
-    print('=== GitHub Credentials ===')
+def ask_for_github_token() -> Github:
     while True:
-        if use_token:
-            username = getpass('Token: ')
-            password = None
-        else:
-            username = input('Username: ')
-            password = getpass('Password: ')
-        github = Github(username, password)
+        tokenfile = str(Path.home()) + '/.mycroft/msk/GITHUB_TOKEN' 
+        if os.path.isfile(tokenfile):
+            with open(tokenfile, 'r') as f:
+                token = f.readline()
+                f.close() 
+        else: 
+            retry = False
+            if not retry:
+                print('')
+                print('=== GitHub Personal Access Token ===')
+                print('To auhenticate with GitHub a Personal Access Token is needed.')
+                print('1. Go to https://github.com/settings/tokens/new create one')
+                print('2. Give the token a name like mycroft-msk') 
+                print('3. Select the scopes')
+                print('   [X] repo') 
+                print('4. Click Generate Token (at bottom of page)') 
+                print('5. Copy the generated token')
+                print('6. Paste it in below')
+                print('')
+                retry = True
+            token = input('Personal Access Token: ')
+        github = Github(token)
         try:
             _ = github.get_user().login
-            register_git_injector(username, password)
+            register_git_injector(token)
+            if not os.path.isfile(tokenfile):
+                print('msk can store your GitHub Personal Access Token for reuse.')
+                print('Token is stored in ~/.mycroft/msk/GITHUB_TOKEN')
+                if ask_yes_no('Do you want to store the GitHub Personal Access Token? (Y/n)', True):
+                    with open(tokenfile, 'w') as f:
+                        f.write(token)
+                        f.close() 
+                else:
+                    print('Remember to store your token a safe place.')
             return github
         except GithubException:
-            print('Login incorrect. Retry:')
-
+            print('Token is incorrect.')
+            print('The reason for this can be your entered')
+            print('a wrong token, the token is invalid or the token has not')
+            print('the right scope. Please retry.')
+            print('')
 
 def skill_repo_name(url: str):
     return '{}/{}'.format(SkillEntry.extract_author(url), SkillEntry.extract_repo_name(url))

@@ -24,7 +24,7 @@ from github.AuthenticatedUser import AuthenticatedUser
 from msm import MycroftSkillsManager
 
 from msk.lazy import Lazy, unset
-from msk.util import ask_for_github_credentials
+from msk.util import ask_for_github_token
 
 
 class GlobalContext:
@@ -32,5 +32,6 @@ class GlobalContext:
     msm = Lazy(unset)  # type: MycroftSkillsManager
     use_token = Lazy(unset)  # type: bool
     branch = Lazy(unset)  # type: str
-    github = Lazy(lambda s: ask_for_github_credentials(s.use_token))  # type: Github
-    user = Lazy(lambda s: s.github.get_user())  # type: AuthenticatedUser
+    github = Lazy(lambda s: ask_for_github_token())  # type: Github
+    user = Lazy(lambda s: s.github.get_user())       # type: AuthenticatedUser
+
