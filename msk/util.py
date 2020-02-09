@@ -50,6 +50,9 @@ skills_kit_footer = '<sub>Created with [mycroft-skills-kit]({}) v{}</sub>'.forma
     'https://github.com/mycroftai/mycroft-skills-kit', __version__
 )
 
+tokendir = str(Path.home()) + '/.mycroft/msk/'
+tokenfile = tokendir + 'GITHUB_TOKEN' 
+
 
 def register_git_injector(token):
     """Generate a script that writes the token to the git command line tool"""
@@ -66,17 +69,16 @@ def register_git_injector(token):
 
 
 def ask_for_github_token() -> Github:
-    while True:
-        tokendir = str(Path.home()) + '/.mycroft/msk/'
-        tokenfile = tokendir + 'GITHUB_TOKEN' 
-        if os.path.isfile(tokenfile):
-            with open(tokenfile, 'r') as f:
-                token = f.readline()
-                f.close() 
-        else: 
-            retry = False
+    print('')
+    token = get_stored_github_token()
+    if token and check_token(token):
+        github = Github(token)
+        register_git_injector(token)
+        return github
+    else:
+        retry = False
+        while True:
             if not retry:
-                print('')
                 print('=== GitHub Personal Access Token ===')
                 print('To auhenticate with GitHub a Personal Access Token is needed.')
                 print('    1. Go to https://github.com/settings/tokens/new create one')
@@ -89,32 +91,61 @@ def ask_for_github_token() -> Github:
                 print('')
                 retry = True
             token = input('Personal Access Token: ')
-        github = Github(token)
-        try:
-            _ = github.get_user().get_repos()
-            register_git_injector(token)
-            if not os.path.isfile(tokenfile):
+            if check_token(token):
+                github = Github(token)
+                store_github_token(token)
+                register_git_injector(token)
+                return github
+            else:
                 print('')
-                print('msk can store your GitHub Personal Access Token for reuse.')
-                if ask_yes_no('Do you want msk to store the GitHub Personal Access Token? (Y/n)', True):
-                    if not os.path.exists(tokendir):
-                        os.makedirs(tokendir)
-                    with open(tokenfile, 'w') as f:
-                        f.write(token)
-                        f.close()
-                    print('Your GitHub Personal Access Token is stored in ' + tokenfile)
-                    print('')
-                else:
-                    print('Remember to store your token a safe place.')
-                    print('')
-            return github
-        except GithubException:
-            print('')
-            print('Token is incorrect.')
-            print('The reason for this can be your entered')
-            print('a wrong token ot the token is invalid')
-            print('Please retry.')
-            print('')
+                print('Token is incorrect.')
+                print('The reason for this can be that token is missing repo scope')
+                print('or the token is invalid.')
+                print('Please retry.')
+                print('')
+
+
+def check_token(token):
+    github = Github(token)
+    try:
+        _ = github.get_user().login
+        _ = github.oauth_scopes
+        if 'repo' in github.oauth_scopes:
+            register_git_injector(token)
+            return True
+        else:
+            return False
+    except Exception:
+        return False
+
+
+def get_stored_github_token():
+    if os.path.isfile(tokenfile):
+        with open(tokenfile, 'r') as f:
+            token = f.readline()
+            f.close()
+        if not check_token(token):
+            os.remove(tokenfile)
+        else:
+            return(token)
+    else:
+        return False
+
+
+def store_github_token(token):
+    print('')
+    if ask_yes_no('Do you want msk to store the GitHub Personal Access Token? (Y/n)', True):
+        if not os.path.exists(tokendir):
+            os.makedirs(tokendir)
+        with open(tokenfile, 'w') as f:
+            f.write(token)
+            f.close()
+        print('Your GitHub Personal Access Token is stored in ' + tokenfile)
+        print('')
+    else:
+        print('Remember to store your token a safe place.')
+        print('')
+
 
 def skill_repo_name(url: str):
     return '{}/{}'.format(SkillEntry.extract_author(url), SkillEntry.extract_repo_name(url))
