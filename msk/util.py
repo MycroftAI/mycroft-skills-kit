@@ -25,7 +25,6 @@ import os
 from contextlib import contextmanager
 from difflib import SequenceMatcher
 from functools import wraps
-from getpass import getpass
 from github import Github, GithubException
 from github.Repository import Repository
 from msm import SkillEntry
@@ -41,17 +40,15 @@ from msk.exceptions import PRModified, MskException, SkillNameTaken
 
 ASKPASS = '''#!/usr/bin/env python3
 import sys
-print(
-    if sys.argv[1] == "Password for 'https://{token}@github.com': " else
-    r"""{token}"""
+print(r"""{token}"""
 )'''
 
-skills_kit_footer = '<sub>Created with [mycroft-skills-kit]({}) v{}</sub>'.format(
-    'https://github.com/mycroftai/mycroft-skills-kit', __version__
-)
+skills_kit_footer = '<sub>Created with [mycroft-skills-kit]({}) v{}</sub>' \
+                    .format('https://github.com/mycroftai/mycroft-skills-kit',
+                            __version__)
 
 tokendir = str(Path.home()) + '/.mycroft/msk/'
-tokenfile = tokendir + 'GITHUB_TOKEN' 
+tokenfile = tokendir + 'GITHUB_TOKEN'
 
 
 def register_git_injector(token):
@@ -69,7 +66,8 @@ def register_git_injector(token):
 
 
 def ask_for_github_token() -> Github:
-    """Ask for GitHub Token if there isnt stored token or stored token is invalid"""
+    """Ask for GitHub Token if there isnt stored token
+       or stored token is invalid"""
     print('')
     token = get_stored_github_token()
     if token and check_token(token):
@@ -82,10 +80,10 @@ def ask_for_github_token() -> Github:
             if not retry:
                 print('To auhenticate with GitHub a Personal Access Token is needed.')
                 print('    1. Go to https://github.com/settings/tokens/new create one')
-                print('    2. Give the token a name like mycroft-msk') 
+                print('    2. Give the token a name like mycroft-msk')
                 print('    3. Select the scopes')
-                print('       [X] repo') 
-                print('    4. Click Generate Token (at bottom of page)') 
+                print('       [X] repo')
+                print('    4. Click Generate Token (at bottom of page)')
                 print('    5. Copy the generated token')
                 print('    6. Paste it in below')
                 print('')
@@ -112,7 +110,6 @@ def check_token(token):
         _ = github.get_user().login
         _ = github.oauth_scopes
         if 'repo' in github.oauth_scopes:
-            register_git_injector(token)
             return True
         else:
             return False
@@ -121,11 +118,11 @@ def check_token(token):
 
 
 def get_stored_github_token():
-    """Returns stored GitHub token or false if there isnt one or the token is invalid"""
+    """Returns stored GitHub token or false if there isnt
+       one or the token is invalid"""
     if os.path.isfile(tokenfile):
         with open(tokenfile, 'r') as f:
             token = f.readline()
-            f.close()
         if not check_token(token):
             os.remove(tokenfile)
         else:
@@ -142,7 +139,7 @@ def store_github_token(token):
             os.makedirs(tokendir)
         with open(tokenfile, 'w') as f:
             f.write(token)
-            f.close()
+            os.chmod(tokenfile, 0o600)
         print('Your GitHub Personal Access Token is stored in ' + tokenfile)
         print('')
     else:
@@ -151,7 +148,8 @@ def store_github_token(token):
 
 
 def skill_repo_name(url: str):
-    return '{}/{}'.format(SkillEntry.extract_author(url), SkillEntry.extract_repo_name(url))
+    return '{}/{}'.format(SkillEntry.extract_author(url),
+                          SkillEntry.extract_repo_name(url))
 
 
 def ask_input(message: str, validator=lambda x: True, on_fail='Invalid entry'):
@@ -167,7 +165,8 @@ def ask_input(message: str, validator=lambda x: True, on_fail='Invalid entry'):
             print(o)
 
 
-def ask_choice(message: str, choices: list, allow_empty=False, on_empty=None) -> Optional[str]:
+def ask_choice(message: str, choices: list,
+               allow_empty=False, on_empty=None) -> Optional[str]:
     if not choices:
         if allow_empty:
             print(on_empty)
@@ -214,7 +213,8 @@ def ask_input_lines(message: str, bullet: str = '>') -> list:
 
 
 def ask_yes_no(message: str, default: Optional[bool]) -> bool:
-    resp = ask_input(message, lambda x: (not x and default is not None) or x in 'yYnN')
+    resp = ask_input(message,
+                     lambda x: (not x and default is not None) or x in 'yYnN')
     return {'n': False, 'y': True, '': default}[resp.lower()]
 
 
@@ -248,7 +248,8 @@ def to_snake(camel):
     """TimeSkill -> time_skill"""
     if not camel:
         return camel
-    return ''.join('_' + x if 'A' <= x <= 'Z' else x for x in camel).lower()[camel[0].isupper():]
+    return ''.join('_' + x if 'A' <= x <= 'Z' else x for x in camel) \
+           .lower()[camel[0].isupper():]
 
 
 @contextmanager
@@ -280,6 +281,7 @@ def serialized(func):
         )
 
     return wrapper
+
 
 def get_licenses():
     licenses = glob(join(dirname(__file__), 'licenses', '*.txt'))
