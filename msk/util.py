@@ -22,9 +22,11 @@
 import atexit
 
 import os
+from configparser import NoOptionError
 from contextlib import contextmanager
 from difflib import SequenceMatcher
 from functools import wraps
+from git.config import GitConfigParser, get_config_path
 from github import Github, GithubException
 from github.Repository import Repository
 from msm import SkillEntry
@@ -287,3 +289,28 @@ def get_licenses():
     licenses = glob(join(dirname(__file__), 'licenses', '*.txt'))
     licenses.sort()
     return licenses
+
+
+def ensure_git_user():
+    """Prompt for fullname and email if git config is missing it."""
+    with GitConfigParser(get_config_path('global'), read_only=False) as conf:
+
+        # Make sure a user section exists
+        if 'user' not in conf.sections():
+            conf.add_section('user')
+
+        # Check for missing options and insert them is missing
+        name, email = (None, None)
+        try:
+            _ = conf.get('user', 'name')
+        except NoOptionError:
+            name = input('Name is missing for git checkins,\n'
+                         'Please provide Full name: ')
+        try:
+            _ = conf.get('user', 'email')
+        except NoOptionError:
+            email = input('Please provide e-mail address: ')
+        if name is not None:
+            conf.set('user', 'name', name)
+        if email is not None:
+            conf.set('user', 'email', email)

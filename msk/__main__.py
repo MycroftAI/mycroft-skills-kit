@@ -29,7 +29,7 @@ from msk.actions.create_test import CreateTestAction
 from msk.actions.submit import SubmitAction
 from msk.exceptions import MskException
 from msk.global_context import GlobalContext
-
+from msk.util import ensure_git_user
 action_names = {
     SubmitAction: ['submit', 'update', 'upgrade', 'upload'],
     CreateAction: ['create'],
@@ -44,7 +44,7 @@ def main():
     parser.add_argument('-b', '--repo-branch', help='Branch of skills repo to upload to')
     parser.add_argument('-s', '--skills-dir', help='Directory to look for skills in')
     parser.add_argument('-c', '--repo-cache', help='Location to store local skills repo clone')
-    
+
     subparsers = parser.add_subparsers(dest='action')
     subparsers.required = True
     action_to_cls = {}
@@ -54,6 +54,7 @@ def main():
 
     args = parser.parse_args(sys.argv[1:])
 
+    ensure_git_user()
     context = GlobalContext()
     context.lang = args.lang
     context.msm = MycroftSkillsManager(
