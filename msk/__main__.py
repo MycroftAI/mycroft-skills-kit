@@ -44,8 +44,7 @@ def main():
     parser.add_argument('-b', '--repo-branch', help='Branch of skills repo to upload to')
     parser.add_argument('-s', '--skills-dir', help='Directory to look for skills in')
     parser.add_argument('-c', '--repo-cache', help='Location to store local skills repo clone')
-    parser.add_argument('-t', '--use-token', action='store_true')
-
+    
     subparsers = parser.add_subparsers(dest='action')
     subparsers.required = True
     action_to_cls = {}
@@ -60,7 +59,6 @@ def main():
     context.msm = MycroftSkillsManager(
         skills_dir=args.skills_dir, repo=SkillRepo(url=args.repo_url, branch=args.repo_branch)
     )
-    context.use_token = args.use_token
     context.branch = context.msm.repo.branch
 
     try:
