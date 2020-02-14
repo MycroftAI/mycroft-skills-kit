@@ -291,26 +291,57 @@ def get_licenses():
     return licenses
 
 
+GIT_IDENTITY_INFO = '''=== Git Identity ===
+msk uses Git to save skills to Github and when submitting a skill to the
+Mycroft Marketplace. To use Git, Git needs to know your Name and
+E-mail address. This is important because every Git commit uses the
+information to show the responsible party for the submission.
+'''
+
+
+GIT_MANUAL_CHANGE_INFO = '''
+Thank you. :)
+
+If you need to change this in the future use
+
+    git --config user.name "My Name"
+
+and
+
+    git --config user.email "me@myhost.com"
+
+'''
+
+
 def ensure_git_user():
     """Prompt for fullname and email if git config is missing it."""
-    with GitConfigParser(get_config_path('global'), read_only=False) as conf:
+    conf_path = get_config_path('global')
+    with GitConfigParser(conf_path, read_only=False) as conf_parser:
 
         # Make sure a user section exists
-        if 'user' not in conf.sections():
-            conf.add_section('user')
+        if 'user' not in conf_parser.sections():
+            conf_parser.add_section('user')
 
-        # Check for missing options and insert them is missing
+        # Check for missing options using the ConfigParser and insert them
+        # if they're missing.
         name, email = (None, None)
         try:
-            _ = conf.get('user', 'name')
+            name = conf_parser.get(section='user', option='name')
         except NoOptionError:
-            name = input('Name is missing for git checkins,\n'
-                         'Please provide Full name: ')
+            pass  # Name doesn't exist deal with it later
         try:
-            _ = conf.get('user', 'email')
+            email = conf_parser.get(section='user', option='email')
         except NoOptionError:
-            email = input('Please provide e-mail address: ')
-        if name is not None:
-            conf.set('user', 'name', name)
-        if email is not None:
-            conf.set('user', 'email', email)
+            pass  # E-mail doesn't exist, deal with it later
+
+        if not all((name, email)):
+            # Some of the needed config is missing
+            print(GIT_IDENTITY_INFO)
+            if not name:
+                name = input('Please enter Full name: ')
+                conf_parser.set('user', 'name', name)
+            if not email:
+                email = input('Please enter e-mail address: ')
+                conf_parser.set('user', 'email', email)
+
+            print(GIT_MANUAL_CHANGE_INFO)
