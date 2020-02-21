@@ -80,7 +80,7 @@ def ask_for_github_token() -> Github:
         retry = False
         while True:
             if not retry:
-                print('To auhenticate with GitHub a Personal Access Token is needed.')
+                print('To authenticate with GitHub a Personal Access Token is needed.')
                 print('    1. Go to https://github.com/settings/tokens/new create one')
                 print('    2. Give the token a name like mycroft-msk')
                 print('    3. Select the scopes')
@@ -145,7 +145,7 @@ def store_github_token(token):
         print('Your GitHub Personal Access Token is stored in ' + tokenfile)
         print('')
     else:
-        print('Remember to store your token a safe place.')
+        print('Remember to store your token in a safe place.')
         print('')
 
 
