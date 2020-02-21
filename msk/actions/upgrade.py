@@ -77,7 +77,6 @@ class UpgradeAction(ConsoleAction):
         print('Upgrading an existing skill in the skill repo...')
         upgrade_branch = self.skill.upgrade()
         self.repo.push_to_fork(upgrade_branch)
-
         title, body = self.create_pr_message(self.skill.git, self.skill.hub)
         print()
         print('===', title, '===')
