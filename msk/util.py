@@ -22,9 +22,11 @@
 import atexit
 
 import os
+from configparser import NoOptionError
 from contextlib import contextmanager
 from difflib import SequenceMatcher
 from functools import wraps
+from git.config import GitConfigParser, get_config_path
 from github import Github, GithubException
 from github.Repository import Repository
 from msm import SkillEntry
@@ -78,7 +80,7 @@ def ask_for_github_token() -> Github:
         retry = False
         while True:
             if not retry:
-                print('To auhenticate with GitHub a Personal Access Token is needed.')
+                print('To authenticate with GitHub a Personal Access Token is needed.')
                 print('    1. Go to https://github.com/settings/tokens/new create one')
                 print('    2. Give the token a name like mycroft-msk')
                 print('    3. Select the scopes')
@@ -143,7 +145,7 @@ def store_github_token(token):
         print('Your GitHub Personal Access Token is stored in ' + tokenfile)
         print('')
     else:
-        print('Remember to store your token a safe place.')
+        print('Remember to store your token in a safe place.')
         print('')
 
 
@@ -287,3 +289,59 @@ def get_licenses():
     licenses = glob(join(dirname(__file__), 'licenses', '*.txt'))
     licenses.sort()
     return licenses
+
+
+GIT_IDENTITY_INFO = '''=== Git Identity ===
+msk uses Git to save skills to Github and when submitting a skill to the
+Mycroft Marketplace. To use Git, Git needs to know your Name and
+E-mail address. This is important because every Git commit uses the
+information to show the responsible party for the submission.
+'''
+
+
+GIT_MANUAL_CHANGE_INFO = '''
+Thank you. :)
+
+If you need to change this in the future use
+
+    git --config user.name "My Name"
+
+and
+
+    git --config user.email "me@myhost.com"
+
+'''
+
+
+def ensure_git_user():
+    """Prompt for fullname and email if git config is missing it."""
+    conf_path = get_config_path('global')
+    with GitConfigParser(conf_path, read_only=False) as conf_parser:
+
+        # Make sure a user section exists
+        if 'user' not in conf_parser.sections():
+            conf_parser.add_section('user')
+
+        # Check for missing options using the ConfigParser and insert them
+        # if they're missing.
+        name, email = (None, None)
+        try:
+            name = conf_parser.get(section='user', option='name')
+        except NoOptionError:
+            pass  # Name doesn't exist deal with it later
+        try:
+            email = conf_parser.get(section='user', option='email')
+        except NoOptionError:
+            pass  # E-mail doesn't exist, deal with it later
+
+        if not all((name, email)):
+            # Some of the needed config is missing
+            print(GIT_IDENTITY_INFO)
+            if not name:
+                name = input('Please enter Full name: ')
+                conf_parser.set('user', 'name', name)
+            if not email:
+                email = input('Please enter e-mail address: ')
+                conf_parser.set('user', 'email', email)
+
+            print(GIT_MANUAL_CHANGE_INFO)
