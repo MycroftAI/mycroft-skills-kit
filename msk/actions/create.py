@@ -35,7 +35,7 @@ from msk.console_action import ConsoleAction
 from msk.exceptions import GithubRepoExists, UnrelatedGithubHistory
 from msk.lazy import Lazy
 from msk.util import ask_input, to_camel, ask_yes_no, ask_input_lines, \
-    print_error, get_licenses
+    print_error, get_licenses, ask_choice
 
 readme_template = '''# <img src="https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/{icon}.svg" card_color="{color}" width="50" height="50" style="vertical-align:bottom"/> \
 {title_name}
@@ -223,19 +223,12 @@ class CreateAction(ConsoleAction):
             red=Fore.RED + Style.BRIGHT,
             reset=Style.RESET_ALL)
     ))
-    category_options = [
-        'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
-        'Music & Audio', 'Media', 'Productivity', 'Transport']
-    category_primary = Lazy(lambda s: ask_input(
-        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(
-            ', '.join(s.category_options)),
-        lambda x: x in s.category_options
-    ))
-    categories_other = Lazy(lambda s: [
-        i.capitalize() for i in ask_input_lines(
-            'Enter additional categories (optional):', '-'
-        )
-    ])
+
+    category_options = ['Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
+                        'Music & Audio', 'Media', 'Productivity', 'Transport']
+    category_primary = Lazy(lambda s: s.ask_category_primary())
+    categories_other= Lazy(lambda s: s.ask_categories_other(s.category_primary))
+    
     tags = Lazy(lambda s: [
         i.capitalize() for i in ask_input_lines(
             'Enter tags to make it easier to search for your skill (optional):',
@@ -290,6 +283,30 @@ class CreateAction(ConsoleAction):
             f.write('\n'.join(self.intent_lines + ['']))
         with open(join(self.path, 'locale', self.lang, self.intent_name + '.dialog'), 'w') as f:
             f.write('\n'.join(self.dialog_lines + ['']))
+
+    def ask_category_primary(self):
+        """Ask user to select primary category."""
+        category = ask_choice('\nCategories define where the skill will display in the Marketplace. \nEnter the primary category for your skill: ',
+                                    self.category_options, allow_empty=False)
+        return category
+
+    def ask_categories_other(self, category_primary):
+        """Ask user to select aditional categories."""
+        categories_other = []
+        while True:
+            category_options_formatted = []
+            for category in self.category_options:
+                if (category == category_primary) or (category in categories_other):
+                    category = '*' + category + '*'
+                category_options_formatted.append(category)
+            category = ask_choice('Enter additional categories (optional):',
+                                  category_options_formatted, allow_empty=True,
+                                  on_empty=None)
+            if (category != None) and (category[0] != '*'):
+                categories_other.append(category)
+            if category == None:
+                break
+        return categories_other
 
     def license(self):
         """Ask user to select a license for the repo."""
