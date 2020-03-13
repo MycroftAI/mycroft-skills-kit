@@ -208,21 +208,26 @@ class CreateAction(ConsoleAction):
     ).strip().capitalize())
     icon = Lazy(lambda s: ask_input(
         'Go to Font Awesome ({blue}fontawesome.com/cheatsheet{reset}) and choose an icon.'
-        '\nEnter the name of the icon:'.format(blue=Fore.BLUE + Style.BRIGHT, reset=Style.RESET_ALL),
+        '\nEnter the name of the icon (defult: robot):'.format(blue=Fore.BLUE + Style.BRIGHT, reset=Style.RESET_ALL),
         validator=lambda x:
-        requests.get("https://raw.githack.com/FortAwesome/Font-Awesome/"
-                     "master/svgs/solid/{x}.svg".format(x=x)).ok,
+        x == '' or requests.get("https://raw.githack.com/FortAwesome/Font-Awesome/"
+                                "master/svgs/solid/{x}.svg".format(x=x)).ok,
         on_fail="\n\n{red}Error: The name was not found. Make sure you spelled the icon name right,"
                 " and try again.{reset}\n".format(red=Fore.RED + Style.BRIGHT, reset=Style.RESET_ALL)))
+    if icon == '':
+        icon = 'robot'
     color = Lazy(lambda s: ask_input(
         "Pick a {yellow}color{reset} for your icon. Find a color that matches the color scheme at"
         " {blue}mycroft.ai/colors{reset}, or pick a color at: {blue}color-hex.com.{reset}"
-        "\nEnter the color hex code (including the #):".format(blue=Fore.BLUE + Style.BRIGHT, yellow=Fore.YELLOW, reset=Style.RESET_ALL),
-        validator=lambda hex_code: hex_code[0] == "#" and len(hex_code) in [4, 7],
+        "\nEnter the color hex code including the # (default: #22A7F0):".format(blue=Fore.BLUE + Style.BRIGHT, yellow=Fore.YELLOW, reset=Style.RESET_ALL),
+        validator=lambda hex_code: 
+        hex_code == '' or hex_code[0] == "#" and len(hex_code) in [4, 7],
         on_fail="\n{red}Check that you entered a correct hex code, and try again.{reset}\n".format(
             red=Fore.RED + Style.BRIGHT,
             reset=Style.RESET_ALL)
     ))
+    if color == '':
+        color = '#22A7F0'
     category_options = [
         'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
         'Music & Audio', 'Media', 'Productivity', 'Transport']
