@@ -35,7 +35,7 @@ from msk.console_action import ConsoleAction
 from msk.exceptions import GithubRepoExists, UnrelatedGithubHistory
 from msk.lazy import Lazy
 from msk.util import ask_input, to_camel, ask_yes_no, ask_input_lines, \
-    print_error, get_licenses
+    print_error, get_licenses, ask_choice
 
 readme_template = '''# <img src="https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/solid/{icon}.svg" card_color="{color}" width="50" height="50" style="vertical-align:bottom"/> \
 {title_name}
@@ -223,19 +223,30 @@ class CreateAction(ConsoleAction):
             red=Fore.RED + Style.BRIGHT,
             reset=Style.RESET_ALL)
     ))
+
     category_options = [
         'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
         'Music & Audio', 'Media', 'Productivity', 'Transport']
-    category_primary = Lazy(lambda s: ask_input(
-        '\nCategories define where the skill will display in the Marketplace. It must be one of the following: \n{}. \nEnter the primary category for your skill: \n-'.format(
-            ', '.join(s.category_options)),
-        lambda x: x in s.category_options
-    ))
-    categories_other = Lazy(lambda s: [
-        i.capitalize() for i in ask_input_lines(
-            'Enter additional categories (optional):', '-'
-        )
-    ])
+    category_primary = ask_choice('\nCategories define where the skill will display in the Marketplace. \nEnter the primary category for your skill: ',
+                                  category_options, allow_empty=False)
+    category_options_new = []
+    categories_other = []
+    for category in category_options:
+        if category == category_primary:
+            category = '*' + category + '*'
+        category_options_new.append(category)
+    category = ask_choice('Enter additional categories (optional):', category_options_new, allow_empty=True, on_empty=None)
+    categories_other.append(category)
+    while category != None:
+        category_options_new = []
+        for category in category_options:
+            if (category == category_primary) or (category in categories_other):
+                category = '*' + category + '*'
+            category_options_new.append(category)
+        category = ask_choice('Enter additional categories (optional):', category_options_new, allow_empty=True, on_empty=None)
+        if (category != None) and (category[0] != '*'):
+            categories_other.append(category)
+
     tags = Lazy(lambda s: [
         i.capitalize() for i in ask_input_lines(
             'Enter tags to make it easier to search for your skill (optional):',
