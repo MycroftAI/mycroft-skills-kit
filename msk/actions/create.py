@@ -224,29 +224,9 @@ class CreateAction(ConsoleAction):
             reset=Style.RESET_ALL)
     ))
 
-    category_options = [
-        'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
-        'Music & Audio', 'Media', 'Productivity', 'Transport']
-    category_primary = ask_choice('\nCategories define where the skill will display in the Marketplace. \nEnter the primary category for your skill: ',
-                                  category_options, allow_empty=False)
-    category_options_new = []
-    categories_other = []
-    for category in category_options:
-        if category == category_primary:
-            category = '*' + category + '*'
-        category_options_new.append(category)
-    category = ask_choice('Enter additional categories (optional):', category_options_new, allow_empty=True, on_empty=None)
-    categories_other.append(category)
-    while category != None:
-        category_options_new = []
-        for category in category_options:
-            if (category == category_primary) or (category in categories_other):
-                category = '*' + category + '*'
-            category_options_new.append(category)
-        category = ask_choice('Enter additional categories (optional):', category_options_new, allow_empty=True, on_empty=None)
-        if (category != None) and (category[0] != '*'):
-            categories_other.append(category)
-
+    category_primary = Lazy(lambda s: s.ask_category_primary())
+    categories_other= Lazy(lambda s: s.ask_categories_other(s.category_primary))
+    
     tags = Lazy(lambda s: [
         i.capitalize() for i in ask_input_lines(
             'Enter tags to make it easier to search for your skill (optional):',
@@ -301,6 +281,44 @@ class CreateAction(ConsoleAction):
             f.write('\n'.join(self.intent_lines + ['']))
         with open(join(self.path, 'locale', self.lang, self.intent_name + '.dialog'), 'w') as f:
             f.write('\n'.join(self.dialog_lines + ['']))
+
+    def ask_category_primary(self):
+        """Ask user to select primary category."""
+        category_options = [
+            'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
+            'Music & Audio', 'Media', 'Productivity', 'Transport']
+
+        category = ask_choice('\nCategories define where the skill will display in the Marketplace. \nEnter the primary category for your skill: ',
+                                    category_options, allow_empty=False)
+        return category
+
+    def ask_categories_other(self, category_primary):
+        """Ask user to select aditional categories."""
+        category_options = [
+            'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
+            'Music & Audio', 'Media', 'Productivity', 'Transport']
+
+        category_options_new = []
+        categories_other = []
+        for category in category_options:
+            if category == category_primary:
+                category = '*' + category + '*'
+            category_options_new.append(category)
+        category = ask_choice('Enter additional categories (optional):', category_options_new, allow_empty=True, on_empty=None)
+        categories_other.append(category)
+        while category != None:
+            category_options_new = []
+            for category in category_options:
+                if (category == category_primary) or (category in categories_other):
+                    category = '*' + category + '*'
+                category_options_new.append(category)
+            category = ask_choice('Enter additional categories (optional):', category_options_new, allow_empty=True, on_empty=None)
+            if (category != None) and (category[0] != '*'):
+                categories_other.append(category)
+        return categories_other
+
+
+
 
     def license(self):
         """Ask user to select a license for the repo."""
