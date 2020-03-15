@@ -22,6 +22,7 @@ from msm import MycroftSkillsManager, SkillRepo
 
 from msk.actions.create import CreateAction
 from msk.actions.create_test import CreateTestAction
+from msk.actions.translate import TranslateAction
 from msk.actions.submit import SubmitAction
 from msk.exceptions import MskException
 from msk.global_context import GlobalContext
@@ -29,7 +30,8 @@ from msk.util import ensure_git_user
 action_names = {
     SubmitAction: ['submit', 'update', 'upgrade', 'upload'],
     CreateAction: ['create'],
-    CreateTestAction: ['create-test']
+    CreateTestAction: ['create-test'],
+    TranslateAction: ['translate']
 }
 
 
