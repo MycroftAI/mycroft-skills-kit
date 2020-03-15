@@ -133,7 +133,7 @@ class TranslateAction(ConsoleAction):
             makedirs(dest, exist_ok=True)
             with open(join(dest, 'AUTO_TRANSLATED'), "w") as f:
                 f.write('Files in this folder is auto translated by mycroft-msk. ')
-                f.write('Please do a manuel inspection of the translation in every file ')
+                f.write('Files in this folder is auto translated by mycroft-msk. ')
             
         for folder in lang_folders:
             for root, dirs, files in walk(folder, topdown=True):
@@ -147,19 +147,11 @@ class TranslateAction(ConsoleAction):
                     print(dest)
 
                 for file in files:
-                    if (file[-4:] == ".voc") or (file[-6] == ".vocab"):                
-                        self.handle_vocab(root, file)
-                    elif file[-7:] == ".dialog":                
-                        self.handle_dialog(root, file)
-                    elif file[-7:] == ".intent":                
-                        self.handle_intent(root, file)
-                    elif file[-7:] == ".entity":                
-                        self.handle_entity(root, file)
-                    elif (file[-3:] == ".rx") or (file[-6] == ".regex"):
+                    if (file[-3:] == ".rx") or (file[-6] == ".regex"):
                         self.handle_regex(root, file)
                     else:
-                        print('Not translated ', file)
-
+                        self.handle_file(root, file)
+                    
     def validate_language(self, lang=None):
         ''' ensure language is supported by google translate '''
         lang = lang or self.lang
@@ -214,7 +206,7 @@ class TranslateAction(ConsoleAction):
         else:
             return self.translate_regex(line[1:], part + line[0], result)
 
-    def handle_dialog(self, root, file):
+    def handle_file(self, root, file):
         dest = root.replace('en-us', self.lang)
         print("Translating " + file)
         translated = []
@@ -245,6 +237,10 @@ class TranslateAction(ConsoleAction):
                                     words[i] = "{{"+w
                                 if "{{" in w and "}}" not in w:
                                     words[i] += "}}"
+                                if "}" in w and "{" not in w:
+                                    words[i] = "{"+w
+                                if "{" in w and "}" not in w:
+                                    words[i] += "}"
                             fixed = " ".join(words)
                             translated[idr] = fixed
                         except Exception:
@@ -253,57 +249,12 @@ class TranslateAction(ConsoleAction):
         with open(join(dest, file), "w") as f:
             f.writelines(translated)
 
-    def handle_vocab(self, root, file):
-        dest = root.replace('en-us', self.lang)
-        print("Translating " + file)
-        translated = []
-        translated.append('# This file is auto translated by mycroft-msk. \n')
-        translated.append('# Please do a manuel inspection of the translation \n')
-        translated.append(' \n')
-        with open(join(root, file), "r") as f:
-            lines = f.readlines()
-            for line in lines:
-                translated.append('# ' + line.strip('\n') + '\n')
-                translated.append(self.translate(line)+" \n")
-        with open(join(dest, file), "w") as f:
-            f.writelines(translated)
-
-    def handle_entity(self, root, file):
-        dest = root.replace('en-us', self.lang)
-        print("Translating " + file)
-        translated = []
-        translated.append('# This file is auto translated by mycroft-msk. \n')
-        translated.append('# Please do a manuel inspection of the translation \n')
-        translated.append(' \n')
-        with open(join(root, file), "r") as f:
-            lines = f.readlines()
-            for line in lines:
-                translated.append('# ' + line.strip('\n') + '\n')
-                translated.append(self.translate(line) + " \n")
-        with open(join(dest, file), "w") as f:
-            f.writelines(translated)
-
-    def handle_intent(self, root, file):
-        dest = root.replace('en-us', self.lang)
-        print("Translating " + file)
-        translated = []
-        translated.append('# This file is auto translated by mycroft-msk. \n')
-        translated.append('# Please do a manuel inspection of the translation \n')
-        translated.append(' \n')
-        with open(join(root, file), "r") as f:
-            lines = f.readlines()
-            for line in lines:
-                translated.append('# ' + line.strip('\n') + '\n')
-                translated.append(self.translate(line) + " \n")
-        with open(join(dest, file), "w") as f:
-            f.writelines(translated)
-
     def handle_regex(self, root, file):
         dest = root.replace('en-us', self.lang)
         print("Translating " + file)
         translated = []
-        translated.append('# This file is NOT translated by mycroft-msk. \n')
-        translated.append('# Please do a manuel translation ! \n')
+        translated.append('# This file is auto translated by mycroft-msk. \n')
+        translated.append('# Please do a manuel inspection of the translation \n')
         translated.append(' \n')
         with open(join(root, file), "r") as f:
             lines = f.readlines()
