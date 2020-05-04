@@ -54,7 +54,9 @@ def main():
     context = GlobalContext()
     context.lang = args.lang
     context.msm = MycroftSkillsManager(
-        skills_dir=args.skills_dir, repo=SkillRepo(url=args.repo_url, branch=args.repo_branch)
+        skills_dir=args.skills_dir, repo=SkillRepo(url=args.repo_url, 
+                                                   branch=args.repo_branch,
+                                                   path=args.repo_cache)
     )
     context.branch = context.msm.repo.branch
 
