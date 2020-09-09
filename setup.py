@@ -26,7 +26,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='msk',
-    version='0.3.15',  # Also update in msk/__init__.py
+    version='0.3.16',  # Also update in msk/__init__.py
     packages=['msk', 'msk.actions'],
     package_data={'msk': ['licenses/*']},
     install_requires=['GitPython>=3.0.5', 'msm>=0.5.13', 'pygithub',
