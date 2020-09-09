@@ -73,6 +73,8 @@ class SkillData(GlobalContext):
 
     def upgrade(self) -> str:
         skill_module = self.submodule_name
+        submod = Git(join(self.repo.msminfo.path, skill_module))
+        submod.remote('set-head', 'origin', '-a')
         self.repo.msminfo.update()
         self.repo_git.fetch()
         self.repo_git.reset(self.repo_branch, hard=True)
