@@ -21,9 +21,12 @@
 # under the License.
 from setuptools import setup
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup(
     name='msk',
-    version='0.3.15',  # Also update in msk/__init__.py
+    version='0.3.16',  # Also update in msk/__init__.py
     packages=['msk', 'msk.actions'],
     package_data={'msk': ['licenses/*']},
     install_requires=['GitPython>=3.0.5', 'msm>=0.5.13', 'pygithub',
@@ -35,9 +38,21 @@ setup(
     maintainer='Matthew Scholefield',
     maintainer_email='matthew331199@gmail.com',
     description='Mycroft Skills Kit',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     entry_points={
         'console_scripts': {
             'msk=msk.__main__:main'
         }
-    }
+    },
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+    ]
 )
