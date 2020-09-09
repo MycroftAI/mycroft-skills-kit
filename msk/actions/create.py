@@ -208,14 +208,12 @@ class CreateAction(ConsoleAction):
     ).strip().capitalize())
     icon = Lazy(lambda s: ask_input(
         'Go to Font Awesome ({blue}fontawesome.com/cheatsheet{reset}) and choose an icon.'
-        '\nEnter the name of the icon (defult: robot):'.format(blue=Fore.BLUE + Style.BRIGHT, reset=Style.RESET_ALL),
+        '\nEnter the name of the icon (default: robot):'.format(blue=Fore.BLUE + Style.BRIGHT, reset=Style.RESET_ALL),
         validator=lambda x:
         x == '' or requests.get("https://raw.githack.com/FortAwesome/Font-Awesome/"
                                 "master/svgs/solid/{x}.svg".format(x=x)).ok,
         on_fail="\n\n{red}Error: The name was not found. Make sure you spelled the icon name right,"
                 " and try again.{reset}\n".format(red=Fore.RED + Style.BRIGHT, reset=Style.RESET_ALL)))
-    if icon == '':
-        icon = 'robot'
     color = Lazy(lambda s: ask_input(
         "Pick a {yellow}color{reset} for your icon. Find a color that matches the color scheme at"
         " {blue}mycroft.ai/colors{reset}, or pick a color at: {blue}color-hex.com.{reset}"
@@ -226,8 +224,6 @@ class CreateAction(ConsoleAction):
             red=Fore.RED + Style.BRIGHT,
             reset=Style.RESET_ALL)
     ))
-    if color == '':
-        color = '#22A7F0'
     category_options = [
         'Daily', 'Configuration', 'Entertainment', 'Information', 'IoT',
         'Music & Audio', 'Media', 'Productivity', 'Transport']
@@ -258,8 +254,8 @@ class CreateAction(ConsoleAction):
         long_description=s.long_description,
         examples=''.join('* "{}"\n'.format(i) for i in s.intent_lines),
         credits=credits_template.format(author=s.author),
-        icon=s.icon,
-        color=s.color.upper(),
+        icon=s.icon or 'robot',
+        color=s.color.upper() or '#22A7F0',
         category_primary=s.category_primary,
         categories_other=''.join('{}\n'.format(i) for i in s.categories_other),
         tags=''.join('#{}\n'.format(i) for i in s.tags),
