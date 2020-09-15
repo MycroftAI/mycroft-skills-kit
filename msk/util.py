@@ -55,7 +55,7 @@ def register_git_injector(token):
 
     with os.fdopen(fd, 'w') as f:
         f.write(ASKPASS.format(
-            token=token.replace('"""', r'\"\"\"')
+            token=token.replace('"""', r'\"\"\"').strip()
         ))
 
     chmod(tmp_path, 0o700)
