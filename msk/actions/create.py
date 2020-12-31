@@ -58,14 +58,14 @@ credits_template = '''## Credits
 {author}
 '''
 
-init_template = '''from mycroft import MycroftSkill, intent_file_handler
+init_template = '''from mycroft import MycroftSkill, intent_handler
 
 
 class {class_name}(MycroftSkill):
     def __init__(self):
         MycroftSkill.__init__(self)
 
-    @intent_file_handler('{intent_name}.intent')
+    @intent_handler('{intent_name}.intent')
     def handle_{handler_name}(self, message):
 {handler_code}
 
