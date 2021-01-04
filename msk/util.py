@@ -37,9 +37,8 @@ from msk import __version__
 from msk.exceptions import PRModified, MskException, SkillNameTaken
 
 ASKPASS = '''#!/usr/bin/env python3
-import sys
-print(r"""{token}"""
-)'''
+print(r"""{token}""")
+'''
 
 skills_kit_footer = '<sub>Created with [mycroft-skills-kit]({}) v{}</sub>' \
                     .format('https://github.com/mycroftai/mycroft-skills-kit',
@@ -56,7 +55,7 @@ def register_git_injector(token):
 
     with os.fdopen(fd, 'w') as f:
         f.write(ASKPASS.format(
-            token=token.replace('"""', r'\"\"\"')
+            token=token.replace('"""', r'\"\"\"').strip()
         ))
 
     chmod(tmp_path, 0o700)
