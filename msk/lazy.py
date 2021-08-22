@@ -24,6 +24,7 @@ def unset():
 
 class Lazy:
     """Lazy attribute across all instances"""
+
     initial_val = []
 
     def __init__(self, func):
