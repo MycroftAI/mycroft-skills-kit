@@ -29,7 +29,7 @@ setup(
     version='0.3.16',  # Also update in msk/__init__.py
     packages=['msk', 'msk.actions'],
     package_data={'msk': ['licenses/*']},
-    install_requires=['GitPython>=3.0.5', 'msm>=0.5.13', 'pygithub',
+    install_requires=['GitPython>=3.0.5', 'msm~=0.8.9', 'pygithub',
                       'requests', 'colorama'],
     url='https://github.com/MycroftAI/mycroft-skills-kit',
     license='Apache-2.0',
