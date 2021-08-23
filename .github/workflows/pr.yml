@@ -1,7 +1,6 @@
 # This workflow will lint with Flake8
 # The standard installation of dependencies and pytest run is not yet included
 # as MSK does not yet include unit tests.
-# The Matrix has been left with a single version for future extensibility.
 
 name: Python package
 
@@ -15,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6]
+        python-version: [3.6, 3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
