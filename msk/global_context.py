@@ -29,5 +29,4 @@ class GlobalContext:
     use_token = Lazy(unset)  # type: bool
     branch = Lazy(unset)  # type: str
     github = Lazy(lambda s: ask_for_github_token())  # type: Github
-    user = Lazy(lambda s: s.github.get_user())       # type: AuthenticatedUser
-
+    user = Lazy(lambda s: s.github.get_user())  # type: AuthenticatedUser

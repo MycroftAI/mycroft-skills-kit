@@ -32,7 +32,7 @@ class SubmitAction(ConsoleAction):
 
     @staticmethod
     def register(parser: ArgumentParser):
-        parser.add_argument('skill_folder')
+        parser.add_argument("skill_folder")
 
     def perform(self):
         self.action.perform()
