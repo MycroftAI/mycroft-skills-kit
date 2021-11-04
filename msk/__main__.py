@@ -46,9 +46,6 @@ def main():
     parser.add_argument(
         "-s", "--skills-dir", help="Directory to look for skills in"
     )
-    parser.add_argument(
-        "-c", "--repo-cache", help="Location to store local skills repo clone"
-    )
 
     subparsers = parser.add_subparsers(dest="action")
     subparsers.required = True
@@ -65,7 +62,7 @@ def main():
     context.msm = MycroftSkillsManager(
         skills_dir=args.skills_dir,
         repo=SkillRepo(
-            url=args.repo_url, branch=args.repo_branch, path=args.repo_cache
+            url=args.repo_url, branch=args.repo_branch
         ),
     )
     context.branch = context.msm.repo.branch
