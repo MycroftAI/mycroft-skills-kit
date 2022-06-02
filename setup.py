@@ -26,7 +26,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='msk',
-    version='0.3.17rc1',  # Also update in msk/__init__.py
+    version='0.4.0',  # Also update in msk/__init__.py
     packages=['msk', 'msk.actions'],
     package_data={'msk': ['licenses/*']},
     install_requires=['GitPython>=3.0.5', 'msm~=0.9.0', 'pygithub',
@@ -35,8 +35,6 @@ setup(
     license='Apache-2.0',
     author='Mycroft AI',
     author_email='support@mycroft.ai',
-    maintainer='Matthew Scholefield',
-    maintainer_email='matthew331199@gmail.com',
     description='Mycroft Skills Kit',
     long_description=long_description,
     long_description_content_type="text/markdown",
